@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WorkPulse Live</title>
+  <style>
+    :root {
+      --verde: #009B4A; --verde-osc: #007b3a; --texto: #0f172a; --gris: #64748b; --borde: #e2e8f0;
+      --fondo: #f8fafc; --rojo: #dc2626; --ambar: #d97706; --azul: #2563eb; --morado: #8b5cf6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: var(--fondo); color: var(--texto); }
+
+    header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+             background: #fff; border-bottom: 4px solid var(--verde); padding: 12px 20px; }
+    header h1 { margin: 0; font-size: 22px; font-weight: 900; color: var(--verde); letter-spacing: .5px; }
+    header .sub { font-size: 12px; font-weight: 700; color: var(--gris); }
+    .estado { font-size: 12px; font-weight: 800; color: var(--gris); text-align: right; }
+    .estado.alerta { color: #b45309; }
+    .estado.error { color: var(--rojo); }
+    .btn-captura { display: inline-block; background: var(--verde); color: #fff; text-decoration: none; font-weight: 900;
+                   font-size: 12px; padding: 9px 14px; border-radius: 6px; margin-top: 6px; }
+    .btn-captura:hover { background: var(--verde-osc); }
+
+    main { padding: 16px 20px 30px; max-width: 1600px; margin: 0 auto; }
+    h2 { font-size: 14px; font-weight: 900; color: var(--verde); text-transform: uppercase; margin: 22px 0 10px; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi { background: #fff; border: 2.5px solid var(--gris); border-radius: 10px; padding: 12px; text-align: center; }
+    .kpi .valor { font-size: 28px; font-weight: 900; }
+    .kpi .extra { font-size: 13px; font-weight: 800; }
+    .kpi .etiqueta { font-size: 10px; font-weight: 900; color: var(--gris); margin-top: 4px; text-transform: uppercase; }
+
+    .panel { background: #fff; border: 2px solid var(--verde); border-radius: 10px; padding: 14px; }
+    .podio { display: flex; justify-content: center; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+    .podio-card { flex: 1 1 200px; max-width: 290px; text-align: center; border: 3px solid; border-radius: 12px; padding: 12px; }
+    .podio-card.p1 { background: #fffbeb; border-color: #f59e0b; padding: 22px 12px; }
+    .podio-card.p2 { background: #f1f5f9; border-color: #94a3b8; }
+    .podio-card.p3 { background: #fff7ed; border-color: var(--ambar); }
+    .medalla { font-size: 32px; line-height: 1; }
+    .nombre { font-weight: 900; font-size: 15px; margin-top: 6px; word-break: break-word; }
+    .lineas-sup { font-size: 11px; font-weight: 700; color: var(--gris); margin-top: 4px; }
+    .perf { font-size: 28px; font-weight: 900; margin-top: 6px; }
+    .p1 .perf { color: #b45309; } .p2 .perf { color: #475569; } .p3 .perf { color: #9a3412; }
+    .barra { height: 6px; background: var(--borde); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .barra > span { display: block; height: 100%; background: var(--verde); }
+
+    .dos-col { display: grid; grid-template-columns: 2.7fr 1fr; gap: 16px; }
+    .dos-col > div { min-width: 0; }            /* deja que la tabla haga scroll dentro de su panel */
+    .tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: var(--verde); color: #fff; padding: 7px 6px; text-align: center; white-space: nowrap; }
+    td { padding: 7px 6px; border-bottom: 1px solid var(--borde); text-align: center; }
+    td.izq, th.izq { text-align: left; }
+    td.fuerte { font-weight: 900; }
+    tfoot td { background: #e2e8f0; font-weight: 900; border-top: 3px solid var(--texto); }
+
+    .falla { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borde); }
+    .falla .causa { font-weight: 800; font-size: 12px; }
+    .falla .lin { font-size: 11px; color: var(--gris); font-weight: 700; }
+    .falla .mins { font-weight: 900; color: var(--rojo); white-space: nowrap; }
+
+    .vacio { text-align: center; padding: 18px; font-weight: 800; color: var(--gris); }
+    .aviso-error { background: #fef2f2; border: 2px solid var(--rojo); color: #991b1b; border-radius: 10px;
+                   padding: 14px; font-weight: 800; margin-top: 16px; }
+
+    @media (max-width: 900px) {
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .dos-col { grid-template-columns: 1fr; }
+      .podio { flex-direction: column; align-items: stretch; }
+      .podio-card { max-width: 100%; }
+      .podio-card.p1 { order: 1; } .podio-card.p2 { order: 2; } .podio-card.p3 { order: 3; }  /* en celular: 1º, 2º, 3º */
+      .estado { text-align: left; }
+      main { padding: 12px 16px 24px; }
+      .kpi .valor { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>WORKPULSE LIVE</h1>
+      <div class="sub">Resumen de producción en tiempo real · solo lectura</div>
+    </div>
+    <div class="estado" id="estado">
+      <div id="estado-texto">Conectando…</div>
+      <!-- Enlace a la app completa (requiere cuenta de Nidec) -->
+      <a class="btn-captura" id="btn-captura" target="_blank" rel="noopener">Abrir WorkPulse para capturar ↗</a>
+    </div>
+  </header>
+
+  <main>
+    <div id="error"></div>
+
+    <h2>Indicadores del turno</h2>
+    <section class="kpis" id="kpis"><div class="vacio">Cargando…</div></section>
+
+    <h2>🏆 Podio de supervisores · Performance global</h2>
+    <section class="panel" id="podio"><div class="vacio">Cargando…</div></section>
+
+    <div class="dos-col">
+      <div>
+        <h2>📋 Desglose por línea</h2>
+        <section class="panel tabla-wrap" id="lineas"><div class="vacio">Cargando…</div></section>
+      </div>
+      <div>
+        <h2>🚨 Top causas / fallas</h2>
+        <section class="panel" id="fallas"><div class="vacio">Cargando…</div></section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+    // ======================= CONFIGURACIÓN =======================
+    // Firebase Console > Configuración del proyecto > Tus apps > App web > firebaseConfig
+    // Estos valores NO son secretos; la seguridad la dan las Reglas de Firestore.
+    const firebaseConfig = {
+      apiKey: "AIzaSyBFFwQwNI9cCCF56bLq-bsZfKlYGWZI1IU",
+      authDomain: "workpulse-39a5c.firebaseapp.com",
+      projectId: "workpulse-39a5c",
+      storageBucket: "workpulse-39a5c.firebasestorage.app",
+      messagingSenderId: "187436233074",
+      appId: "1:187436233074:web:249101251e6f53b5012deb"
+    };
+    // URL de la app completa en Apps Script (para capturar; pide cuenta de Nidec)
+    const URL_APP_CAPTURA = "https://script.google.com/a/macros/nidec-ga.com/s/AKfycbyEIR6w67JD5g97LiSS6Obqm23u_8fylrMVRET5AzaITeP5OWSLqw6WoduPmCwp_Jkz/exec";
+    const MINUTOS_DATO_VIEJO = 15;
+    // =============================================================
+
+    document.getElementById("btn-captura").href = URL_APP_CAPTURA;
+
+    // ---------- Utilidades seguras: los datos solo se insertan con textContent ----------
+    const $ = (id) => document.getElementById(id);
+    function el(tag, clase, texto) {
+      const n = document.createElement(tag);
+      if (clase) n.className = clase;
+      if (texto !== undefined && texto !== null) n.textContent = String(texto);
+      return n;
+    }
+    const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+    const fmt = (v) => num(v).toLocaleString("es-MX");
+    const conSigno = (v) => (num(v) >= 0 ? "+" : "") + fmt(v);
+
+    // Acepta el valor como texto JSON o como arreglo/objeto nativo de Firestore.
+    function leerJSON(valor, porDefecto) {
+      if (valor === undefined || valor === null || valor === "") return porDefecto;
+      if (typeof valor !== "string") return valor;
+      try { return JSON.parse(valor); } catch { return porDefecto; }
+    }
+
+    function vacio(contenedor, texto) { contenedor.replaceChildren(el("div", "vacio", texto)); }
+
+    // ---------- KPIs ----------
+    function pintarKpis(k) {
+      const cont = $("kpis");
+      if (!k || typeof k !== "object") { vacio(cont, "Sin indicadores en el último cálculo."); return; }
+      const perf = num(k.performancePct);
+      const colorPerf = perf >= 95 ? "var(--verde)" : (perf >= 90 ? "var(--ambar)" : "var(--rojo)");
+      const promDT = num(k.lineasEvaluadas) > 0 ? Math.round(num(k.downtimeMins) / num(k.lineasEvaluadas)) : 0;
+      const tarjetas = [
+        { v: fmt(k.lineasEvaluadas), e: "Líneas evaluadas", c: "var(--azul)" },
+        { v: fmt(k.downtimeMins) + " min", e: "Tiempo muerto acumulado", c: "var(--rojo)" },
+        { v: fmt(promDT) + " min", e: "Promedio DT por línea", c: "var(--ambar)" },
+        { v: perf + "%", e: "Performance", c: colorPerf },
+        { v: fmt(k.prodPlaneada), e: "Producción planeada (pzs)", c: "var(--gris)" },
+        { v: fmt(k.prodReal), e: "Producción real (pzs)", c: "var(--verde)" },
+        { v: conSigno(k.deltaPzs), e: "Delta producción (pzs)", c: num(k.deltaPzs) >= 0 ? "var(--verde)" : "var(--rojo)" },
+        { v: fmt(k.palletsReal), extra: " (" + conSigno(k.deltaPallets) + ")", e: "Total pallets (real vs Δ)", c: "var(--morado)",
+          cExtra: num(k.deltaPallets) >= 0 ? "var(--verde)" : "var(--rojo)" }
+      ];
+      cont.replaceChildren(...tarjetas.map((t) => {
+        const card = el("div", "kpi");
+        card.style.borderColor = t.c;
+        const valor = el("div", "valor", t.v);
+        valor.style.color = t.c;
+        if (t.extra) { const s = el("span", "extra", t.extra); s.style.color = t.cExtra; valor.appendChild(s); }
+        card.append(valor, el("div", "etiqueta", t.e));
+        return card;
+      }));
+    }
+
+    // ---------- Podio ----------
+    function pintarPodio(lista) {
+      const cont = $("podio");
+      const ranking = (Array.isArray(lista) ? lista : [])
+        .filter((s) => s && String(s.supervisor ?? "").trim() !== "")
+        .map((s) => ({
+          supervisor: String(s.supervisor).trim(),
+          lineas: Array.isArray(s.lineas) ? s.lineas.join(", ") : String(s.lineas ?? ""),
+          perf: Math.round(num(s.perfGlobal) * 10) / 10
+        }))
+        .sort((a, b) => b.perf - a.perf)
+        .slice(0, 50);
+
+      if (!ranking.length) { vacio(cont, "Aún no hay supervisores con registros hoy."); return; }
+
+      const medallas = { 1: "🥇", 2: "🥈", 3: "🥉" };
+      const podio = el("div", "podio");
+      [2, 1, 3].forEach((puesto) => {
+        const s = ranking[puesto - 1];
+        if (!s) return;
+        const card = el("div", "podio-card p" + puesto);
+        const barra = el("div", "barra");
+        const relleno = el("span");
+        relleno.style.width = Math.max(0, Math.min(100, s.perf)) + "%";
+        barra.appendChild(relleno);
+        card.append(el("div", "medalla", medallas[puesto]), el("div", "nombre", s.supervisor),
+                    el("div", "lineas-sup", "Líneas: " + (s.lineas || "—")), el("div", "perf", s.perf + "%"), barra);
+        podio.appendChild(card);
+      });
+
+      const piezas = [podio];
+      if (ranking.length > 3) {
+        const t = el("table");
+        t.style.marginTop = "14px";
+        const trh = el("tr");
+        [["#", ""], ["Supervisor", "izq"], ["Líneas", "izq"], ["Performance", ""]].forEach(([x, c]) => trh.appendChild(el("th", c, x)));
+        const tb = el("tbody");
+        ranking.slice(3).forEach((s, i) => {
+          const tr = el("tr");
+          tr.append(el("td", "fuerte", i + 4), el("td", "izq", s.supervisor), el("td", "izq", s.lineas || "—"), el("td", "fuerte", s.perf + "%"));
+          tb.appendChild(tr);
+        });
+        const th = el("thead"); th.appendChild(trh);
+        t.append(th, tb);
+        piezas.push(t);
+      }
+      cont.replaceChildren(...piezas);
+    }
+
+    // ---------- Tabla por línea ----------
+    function pintarLineas(lista) {
+      const cont = $("lineas");
+      const filas = Array.isArray(lista) ? lista.filter((l) => l && typeof l === "object") : [];
+      if (!filas.length) { vacio(cont, "No hay líneas activas cargadas hoy."); return; }
+
+      const cols = [
+        ["Línea", (l) => "L" + l.linea, "fuerte"], ["Área", (l) => l.area, ""], ["Supervisor", (l) => l.supervisor, "izq"],
+        ["Meta", (l) => fmt(l.metaTotal), ""], ["Real", (l) => fmt(l.realTotal), "fuerte"],
+        ["Perf.", (l) => num(l.metaTotal) > 0 ? Math.round(num(l.realTotal) / num(l.metaTotal) * 100) + "%" : "—", "fuerte"],
+        ["Hombre", (l) => num(l.hombre) + "m", ""], ["Máquina", (l) => num(l.maquina) + "m", ""],
+        ["Material", (l) => num(l.material) + "m", ""], ["Método", (l) => num(l.metodo) + "m", ""],
+        ["Calidad", (l) => num(l.calidad) + "m", ""], ["Producción", (l) => num(l.produccion) + "m", ""],
+        ["Otros", (l) => num(l.otros) + "m", ""], ["Total DT", (l) => num(l.totalDT) + " min", "fuerte"]
+      ];
+
+      const t = el("table");
+      t.style.minWidth = "860px";
+      const trh = el("tr");
+      cols.forEach(([titulo, , c]) => trh.appendChild(el("th", c === "izq" ? "izq" : "", titulo)));
+      const tb = el("tbody");
+      filas.forEach((l) => {
+        const tr = el("tr");
+        cols.forEach(([, f, c]) => tr.appendChild(el("td", c, f(l))));
+        tb.appendChild(tr);
+      });
+
+      const suma = (campo) => filas.reduce((a, l) => a + num(l[campo]), 0);
+      const meta = suma("metaTotal"), real = suma("realTotal");
+      const tf = el("tr");
+      [
+        ["TOTALES", "izq"], ["", ""], ["", ""], [fmt(meta), ""], [fmt(real), ""],
+        [meta > 0 ? Math.round(real / meta * 100) + "%" : "—", ""],
+        ...["hombre", "maquina", "material", "metodo", "calidad", "produccion", "otros"].map((c) => [suma(c) + "m", ""]),
+        [suma("totalDT") + " min", ""]
+      ].forEach(([x, c]) => tf.appendChild(el("td", c, x)));
+
+      const thead = el("thead"); thead.appendChild(trh);
+      const tfoot = el("tfoot"); tfoot.appendChild(tf);
+      t.append(thead, tb, tfoot);
+      cont.replaceChildren(t);
+    }
+
+    // ---------- Top fallas ----------
+    function pintarFallas(lista) {
+      const cont = $("fallas");
+      const fallas = Array.isArray(lista) ? lista.filter((f) => f && f.causa) : [];
+      if (!fallas.length) { vacio(cont, "No hay fallas críticas registradas. ✅"); return; }
+      cont.replaceChildren(...fallas.map((f, i) => {
+        const fila = el("div", "falla");
+        const izq = el("div");
+        izq.append(el("div", "causa", "#" + (i + 1) + " " + f.causa),
+                   el("div", "lin", Array.isArray(f.lineas) && f.lineas.length ? f.lineas.join(", ") : ""));
+        fila.append(izq, el("div", "mins", num(f.mins) + " min"));
+        return fila;
+      }));
+    }
+
+    // ---------- Estado / errores ----------
+    function pintarEstado(data, desdeCache) {
+      const caja = $("estado"), txt = $("estado-texto");
+      caja.classList.remove("alerta", "error");
+      const t = data?.actualizadoEn;
+      const fecha = (t && typeof t.toDate === "function") ? t.toDate() : null;
+      let mensaje = fecha
+        ? "Actualizado: " + fecha.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })
+        : "Sin fecha de actualización";
+      if (fecha && (Date.now() - fecha.getTime()) / 60000 > MINUTOS_DATO_VIEJO) {
+        mensaje += " · ⚠️ más de " + MINUTOS_DATO_VIEJO + " min sin actualizar";
+        caja.classList.add("alerta");
+      }
+      if (desdeCache) { mensaje += " · sin conexión (caché)"; caja.classList.add("alerta"); }
+      txt.textContent = mensaje;
+    }
+
+    function mostrarError(texto) {
+      $("estado").classList.add("error");
+      $("estado-texto").textContent = "Sin conexión con los datos";
+      $("error").replaceChildren(el("div", "aviso-error", texto));
+    }
+
+    function mensajeDeError(err) {
+      switch (err?.code) {
+        case "permission-denied": return "Firestore rechazó la lectura (permission-denied). Revisa que las Reglas de Firestore estén publicadas.";
+        case "failed-precondition": return "La base de datos Firestore no está creada en este proyecto.";
+        case "unavailable": return "Firestore no está disponible. Revisa la conexión a internet.";
+        default: return "No se pudieron leer los datos: " + (err?.message || err);
+      }
+    }
+
+    // ---------- Arranque ----------
+    function escucharDocumento(ref, alCambiar, alError) {
+      return new Promise((resolve, reject) => {
+        let primera = true;
+        const cancelar = onSnapshot(ref,
+          (snap) => { alCambiar(snap); if (primera) { primera = false; resolve(cancelar); } },
+          (err) => { alError(err); if (primera) { primera = false; reject(err); } });
+      });
+    }
+
+    let refDoc = null;
+    let cancelar = null;
+
+    async function iniciar() {
+      if (firebaseConfig.projectId.startsWith("TU_")) {
+        mostrarError("Falta configurar firebaseConfig en index.html.");
+        return;
+      }
+      try {
+        if (!refDoc) refDoc = doc(getFirestore(initializeApp(firebaseConfig)), "resumen_ejecutivo", "ultimo_calculo");
+        cancelar = await escucharDocumento(refDoc, (snap) => {
+          if (!snap.exists()) {
+            mostrarError("El documento resumen_ejecutivo/ultimo_calculo todavía no existe. Ejecuta publicarResumenEnFirestore en Apps Script.");
+            return;
+          }
+          $("error").replaceChildren();
+          const d = snap.data();
+          pintarEstado(d, snap.metadata.fromCache);
+          // Cada sección se pinta por separado: si una falla, las demás siguen visibles.
+          [[pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
+           [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])]]
+            .forEach(([fn, valor]) => { try { fn(valor); } catch (e) { console.error(fn.name, e); } });
+        }, (err) => { console.error("[WorkPulse Live]", err); mostrarError(mensajeDeError(err)); });
+      } catch (err) {
+        if (!cancelar) mostrarError(mensajeDeError(err));
+      }
+    }
+
+    window.addEventListener("pagehide", () => { if (cancelar) { cancelar(); cancelar = null; } });
+    window.addEventListener("pageshow", (e) => { if (e.persisted && !cancelar) iniciar(); });
+    iniciar();
+  </script>
+</body>
+</html>
