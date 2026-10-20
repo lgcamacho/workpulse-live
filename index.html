@@ -61,6 +61,21 @@
     .falla .lin { font-size: 11px; color: var(--gris); font-weight: 700; }
     .falla .mins { font-weight: 900; color: var(--rojo); white-space: nowrap; }
 
+    /* ----- Inicio de sesión ----- */
+    .login { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+             background: var(--fondo); padding: 16px; }
+    .login[hidden], .usuario-box[hidden] { display: none; }
+    .login-card { background: #fff; border: 2px solid var(--verde); border-top: 6px solid var(--verde); border-radius: 12px;
+                  padding: 28px 24px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+    .login-card h1 { margin: 0 0 6px; color: var(--verde); font-size: 26px; font-weight: 900; }
+    .login-card p { color: var(--gris); font-weight: 700; font-size: 14px; margin: 8px 0 18px; }
+    .btn-google { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: var(--texto); border: 2px solid #cbd5e1;
+                  border-radius: 8px; padding: 12px 18px; font: inherit; font-weight: 900; font-size: 15px; cursor: pointer; }
+    .btn-google:hover:not(:disabled) { border-color: var(--verde); background: #f0fdf4; }
+    .btn-google:disabled { opacity: .6; cursor: wait; }
+    .login-msg { color: var(--rojo) !important; min-height: 1em; margin-bottom: 0 !important; }
+    .usuario-box { font-size: 11px; font-weight: 800; color: var(--gris); margin-top: 4px; }
+    .btn-salir { background: none; border: none; color: var(--rojo); font: inherit; font-weight: 900; cursor: pointer; padding: 0; text-decoration: underline; }
     /* ----- Motor Production Board ----- */
     .board-filtros { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: space-between;
                      background: #f8fafc; border: 2px solid var(--texto); border-radius: 8px; padding: 8px 14px; margin-bottom: 12px; }
@@ -126,10 +141,26 @@
       <div id="estado-texto">Conectando…</div>
       <!-- Enlace a la app completa (requiere cuenta de Nidec) -->
       <a class="btn-captura" id="btn-captura" target="_blank" rel="noopener">Abrir WorkPulse para capturar ↗</a>
+      <div class="usuario-box" id="usuario-box" hidden>
+        <span id="usuario"></span> · <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
+      </div>
     </div>
   </header>
 
-  <main>
+  <!-- Pantalla de acceso: solo cuentas @nidec-ga.com -->
+  <div class="login" id="login">
+    <div class="login-card">
+      <h1>WORKPULSE LIVE</h1>
+      <p>Tablero de producción en tiempo real.<br>Acceso solo con cuenta <b>@nidec-ga.com</b>.</p>
+      <button type="button" class="btn-google" id="btn-login" disabled>
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
+        <span id="btn-login-txt">Verificando sesión…</span>
+      </button>
+      <p class="login-msg" id="login-msg"></p>
+    </div>
+  </div>
+
+  <main id="contenido" hidden>
     <div id="error"></div>
 
     <h2>🏭 Motor Production Board</h2>
@@ -181,6 +212,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
     import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+      from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
     // ======================= CONFIGURACIÓN =======================
     // Firebase Console > Configuración del proyecto > Tus apps > App web > firebaseConfig
@@ -671,16 +704,50 @@
       });
     }
 
+    // ---------- Acceso: solo cuentas verificadas @nidec-ga.com ----------
+    // La validación real está en las Reglas de Firestore; esta revisión solo mejora el mensaje al usuario.
+    const DOMINIO = "nidec-ga.com";
     let refDoc = null;
     let cancelar = null;
+    let auth = null;
+    let mensajePendiente = "";
+
+    const correoValido = (u) => !!u && u.emailVerified === true && String(u.email || "").toLowerCase().endsWith("@" + DOMINIO);
+
+    function detener() { if (cancelar) { cancelar(); cancelar = null; } }
+
+    function mostrarLogin(mensaje) {
+      $("contenido").hidden = true;
+      $("usuario-box").hidden = true;
+      $("login").hidden = false;
+      $("btn-login").disabled = false;
+      $("btn-login-txt").textContent = "Iniciar sesión con Google";
+      $("login-msg").textContent = mensaje || "";
+      $("estado-texto").textContent = "Sin sesión";
+    }
+
+    function mostrarApp(u) {
+      $("login").hidden = true;
+      $("contenido").hidden = false;   // visible ANTES de crear las gráficas, para que tomen su tamaño
+      $("usuario").textContent = u.email;
+      $("usuario-box").hidden = false;
+    }
+
+    function mensajeDeLogin(err) {
+      switch (err?.code) {
+        case "auth/popup-closed-by-user":
+        case "auth/cancelled-popup-request": return "";
+        case "auth/popup-blocked": return "El navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio e intenta de nuevo.";
+        case "auth/unauthorized-domain": return "Este dominio no está autorizado en Firebase (Authentication → Configuración → Dominios autorizados).";
+        case "auth/operation-not-allowed": return "El inicio de sesión con Google no está habilitado en Firebase (Authentication → Método de acceso).";
+        case "auth/network-request-failed": return "Sin conexión con Google. Revisa tu internet.";
+        default: return "No se pudo iniciar sesión: " + (err?.message || err);
+      }
+    }
 
     async function iniciar() {
-      if (firebaseConfig.projectId.startsWith("TU_")) {
-        mostrarError("Falta configurar firebaseConfig en index.html.");
-        return;
-      }
+      detener();
       try {
-        if (!refDoc) refDoc = doc(getFirestore(initializeApp(firebaseConfig)), "resumen_ejecutivo", "ultimo_calculo");
         cancelar = await escucharDocumento(refDoc, (snap) => {
           if (!snap.exists()) {
             mostrarError("El documento resumen_ejecutivo/ultimo_calculo todavía no existe. Ejecuta publicarResumenEnFirestore en Apps Script.");
@@ -700,9 +767,59 @@
       }
     }
 
-    window.addEventListener("pagehide", () => { if (cancelar) { cancelar(); cancelar = null; } });
-    window.addEventListener("pageshow", (e) => { if (e.persisted && !cancelar) iniciar(); });
-    iniciar();
+    function arrancar() {
+      if (firebaseConfig.projectId.startsWith("TU_")) {
+        $("login").hidden = true; $("contenido").hidden = false;
+        mostrarError("Falta configurar firebaseConfig en index.html.");
+        return;
+      }
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      refDoc = doc(getFirestore(app), "resumen_ejecutivo", "ultimo_calculo");
+
+      const proveedor = new GoogleAuthProvider();
+      // "hd" solo sugiere la cuenta de la empresa en el selector de Google; no es una restricción.
+      proveedor.setCustomParameters({ hd: DOMINIO, prompt: "select_account" });
+
+      $("btn-login").addEventListener("click", async () => {
+        $("btn-login").disabled = true;
+        $("login-msg").textContent = "";
+        try {
+          await signInWithPopup(auth, proveedor);
+        } catch (err) {
+          console.error("[Login]", err);
+          $("login-msg").textContent = mensajeDeLogin(err);
+          $("btn-login").disabled = false;
+        }
+      });
+
+      $("btn-salir").addEventListener("click", async () => {
+        detener();
+        await signOut(auth);
+        location.reload();   // limpia de la memoria los datos que se mostraron
+      });
+
+      // La sesión se recuerda en este navegador (útil para una TV en piso).
+      onAuthStateChanged(auth, async (u) => {
+        detener();
+        if (!u) {
+          mostrarLogin(mensajePendiente);
+          mensajePendiente = "";
+          return;
+        }
+        if (!correoValido(u)) {
+          mensajePendiente = "La cuenta " + (u.email || "seleccionada") + " no es @" + DOMINIO + ". Entra con tu cuenta de Nidec.";
+          await signOut(auth);
+          return;
+        }
+        mostrarApp(u);
+        iniciar();
+      });
+    }
+
+    window.addEventListener("pagehide", () => detener());
+    window.addEventListener("pageshow", (e) => { if (e.persisted && !cancelar && auth && correoValido(auth.currentUser)) iniciar(); });
+    arrancar();
   </script>
 </body>
 </html>
