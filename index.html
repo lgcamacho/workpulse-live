@@ -78,6 +78,28 @@
     table.board td.nd { color: #a1a1aa; }
     table.board td.bloq { background: #f1f5f9; opacity: .6; }
     table.board tr.tot td { background: #e4e4e7; border-top: 3.5px solid #000; }
+    /* ----- Centro de Comando (8 gráficas) ----- */
+    .cc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .cc-card { background: #fff; border: 2px solid var(--verde); border-radius: 8px; padding: 10px; height: 300px;
+               display: flex; flex-direction: column; min-width: 0; }
+    .cc-tit { text-align: center; font-size: 11px; font-weight: 900; color: var(--verde); text-transform: uppercase;
+              border-bottom: 1px solid var(--borde); padding-bottom: 6px; margin-bottom: 4px; }
+    .cc-chart { flex: 1; min-height: 0; }
+    .cc-avance { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; }
+    .cc-avance .num { font-size: 38px; font-weight: 900; color: var(--texto); }
+    .cc-avance .num span { font-size: 18px; color: var(--gris); }
+    .cc-barra { width: 100%; height: 22px; background: var(--borde); border-radius: 11px; overflow: hidden; position: relative; }
+    .cc-barra > div { height: 100%; }
+    .cc-barra > b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+    .cc-fallas { flex: 1; overflow-y: auto; }
+    .cc-falla { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+    .cc-falla .l { font-size: 13px; font-weight: 900; }
+    .cc-falla .l small { color: var(--rojo); font-size: 11px; margin-left: 4px; }
+    .cc-falla .d { font-size: 10px; font-weight: 900; color: var(--gris); text-transform: uppercase; }
+    .cc-falla .p { color: var(--rojo); font-weight: 900; font-size: 14px; white-space: nowrap; }
+    .cc-ok { color: var(--verde); font-weight: 900; text-align: center; padding: 14px 0; }
+    @media (max-width: 1100px) { .cc-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px)  { .cc-grid { grid-template-columns: 1fr; } .cc-card { height: 280px; } }
     .vacio { text-align: center; padding: 18px; font-weight: 800; color: var(--gris); }
     .aviso-error { background: #fef2f2; border: 2px solid var(--rojo); color: #991b1b; border-radius: 10px;
                    padding: 14px; font-weight: 800; margin-top: 16px; }
@@ -120,6 +142,23 @@
       <div class="tabla-wrap" id="board"><div class="vacio">Cargando…</div></div>
     </section>
 
+    <h2>📊 Centro de comando</h2>
+    <section class="cc-grid">
+      <div class="cc-card"><div class="cc-tit" id="cc-tit-dia">1. Producción por hora</div><div class="cc-chart" id="cc-dia"></div></div>
+      <div class="cc-card"><div class="cc-tit">2. Producción por día</div><div class="cc-chart" id="cc-sem"></div></div>
+      <div class="cc-card"><div class="cc-tit">3. Producción por semana</div><div class="cc-chart" id="cc-mes"></div></div>
+      <div class="cc-card"><div class="cc-tit">4. Comportamiento mensual</div><div class="cc-chart" id="cc-ano"></div></div>
+      <div class="cc-card"><div class="cc-tit">5. Performance global (turno)</div><div class="cc-chart" id="cc-perf"></div></div>
+      <div class="cc-card"><div class="cc-tit">6. Avance vs meta (turno)</div>
+        <div class="cc-avance">
+          <div class="num"><b id="cc-real">0</b> <span id="cc-meta">/ 0 Pz</span></div>
+          <div class="cc-barra"><div id="cc-barra"></div><b id="cc-pct">0.0%</b></div>
+        </div>
+      </div>
+      <div class="cc-card"><div class="cc-tit">7. Distribución downtime (6M)</div><div class="cc-chart" id="cc-dt"></div></div>
+      <div class="cc-card"><div class="cc-tit">8. Fallas que afectan producción</div><div class="cc-fallas" id="cc-fallas"></div></div>
+    </section>
+
     <h2>Indicadores del turno</h2>
     <section class="kpis" id="kpis"><div class="vacio">Cargando…</div></section>
 
@@ -138,6 +177,7 @@
     </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
     import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -346,33 +386,41 @@
       sel.value = valor;
     }
 
+    const norm = (x) => String(x ?? "").toUpperCase().trim();
+
     function pintarPizarron(p) {
       if (p !== undefined) pizarronActual = p;
       p = pizarronActual;
       const cont = $("board");
       if (!p) { vacio(cont, "El pizarrón todavía no se publica. Ejecuta publicarResumenEnFirestore en Apps Script."); return; }
+      if (p.error) { vacio(cont, "No se pudo armar el pizarrón: " + p.error); return; }
       const todas = Array.isArray(p.lineas) ? p.lineas.filter((l) => l && l.linea !== undefined) : [];
-      if (p && p.error) { vacio(cont, "No se pudo armar el pizarrón: " + p.error); return; }
-      if (!todas.length) { vacio(cont, "No hay líneas configuradas con supervisor."); return; }
 
-      // Filtros (se recuerdan en este navegador)
+      // Catálogos completos (Log_Areas y Log_Turnos), igual que el pizarrón de la app.
+      const cat = p.catalogos || {};
+      const areas = (Array.isArray(cat.areas) && cat.areas.length) ? cat.areas.map(String)
+                  : [...new Set(todas.map((l) => String(l.area || "")))];
       const pref = leerPref();
       const selArea = $("sel-area"), selTurno = $("sel-turno");
-      const areas = [...new Set(todas.map((l) => String(l.area || "")))].sort();
+
       let area = selArea.value || pref.area;
-      if (!areas.includes(area)) area = areas.includes("DRYERS") ? "DRYERS" : areas[0];
+      if (!areas.some((a) => norm(a) === norm(area))) area = areas.find((a) => norm(a) === "DRYERS") || areas[0] || "";
       llenarSelect(selArea, areas, area);
 
-      const delArea = todas.filter((l) => String(l.area || "") === area);
-      const conteo = {};
-      delArea.forEach((l) => { conteo[l.turno] = (conteo[l.turno] || 0) + 1; });
-      const turnos = Object.keys(conteo).sort();
+      const delArea = todas.filter((l) => norm(l.area) === norm(area));
+      const turnos = (Array.isArray(cat.turnos) && cat.turnos.length) ? cat.turnos.map(String)
+                   : [...new Set(delArea.map((l) => String(l.turno || "")))];
       let turno = selTurno.value || pref.turno;
-      if (!turnos.includes(turno)) turno = turnos.sort((a, b) => conteo[b] - conteo[a])[0];
-      llenarSelect(selTurno, turnos.sort(), turno);
+      if (!turnos.some((t) => norm(t) === norm(turno))) {
+        // Sin preferencia: el turno con más líneas configuradas en esa área
+        const conteo = {};
+        delArea.forEach((l) => { conteo[norm(l.turno)] = (conteo[norm(l.turno)] || 0) + 1; });
+        turno = [...turnos].sort((a, b) => (conteo[norm(b)] || 0) - (conteo[norm(a)] || 0))[0] || "";
+      }
+      llenarSelect(selTurno, turnos, turno);
       guardarPref({ area, turno });
 
-      const lineas = delArea.filter((l) => l.turno === turno);
+      const lineas = delArea.filter((l) => norm(l.turno) === norm(turno));
 
       // Fecha del cálculo
       const hoy = fechaHoyCliente();
@@ -453,13 +501,133 @@
       tbody.appendChild(trt);
 
       t.append(thead, tbody);
-      cont.replaceChildren(lineas.length ? t : el("div", "vacio", "No hay líneas para " + area + " / " + turno + "."));
+      cont.replaceChildren(lineas.length ? t : el("div", "vacio", "No hay líneas con supervisor configuradas para " + area + " · " + turno + "."));
     }
 
-    $("sel-area").addEventListener("change", () => { $("sel-turno").value = ""; pintarPizarron(); });
+    $("sel-area").addEventListener("change", () => pintarPizarron());
     $("sel-turno").addEventListener("change", () => pintarPizarron());
     // Cada minuto se vuelve a pintar para que se desbloqueen las horas que ya empezaron.
     setInterval(() => { if (pizarronActual) pintarPizarron(); }, 60000);
+
+    // ---------- Centro de Comando (mismas 8 gráficas del tablero principal) ----------
+    const HORAS_24 = ["07:00-08:00","08:00-09:00","09:00-10:00","10:00-11:00","11:00-12:00","12:00-13:00",
+      "13:00-14:00","14:00-15:00","15:00-16:00","16:00-17:00","17:00-18:00","18:00-19:00",
+      "19:00-20:00","20:00-21:00","21:00-22:00","22:00-23:00","23:00-00:00","00:00-01:00",
+      "01:00-02:00","02:00-03:00","03:00-04:00","04:00-05:00","05:00-06:00","06:00-07:00"];
+    const graficas = {};
+
+    function opcionesLinea(categorias, rotar) {
+      return {
+        chart: { type: "line", height: "100%", width: "100%", toolbar: { show: false }, parentHeightOffset: 0, animations: { enabled: false } },
+        stroke: { width: [3.5, 2], curve: "smooth" },
+        colors: ["#009B4A", "#00E676"],
+        series: [{ name: "Producción Real", data: [] }, { name: "Meta", data: [] }],
+        xaxis: { categories: categorias, labels: { rotate: rotar ? -45 : 0, rotateAlways: !!rotar, hideOverlappingLabels: !rotar,
+                 style: { fontWeight: "900", fontSize: rotar ? "8px" : "10px", colors: "#0f172a" } } },
+        yaxis: { min: 0, labels: { style: { fontWeight: "bold", fontSize: "10px" } } },
+        grid: { borderColor: "#cbd5e1", strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: true } },
+                padding: { top: 6, bottom: rotar ? 18 : 8, left: 8, right: 8 } },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        tooltip: { shared: true }
+      };
+    }
+
+    function crearGraficas() {
+      if (graficas.listas) return true;
+      if (typeof window.ApexCharts !== "function") return false;
+      const crear = (id, opts) => { const g = new ApexCharts($(id), opts); g.render(); return g; };
+      graficas.dia = crear("cc-dia", opcionesLinea(HORAS_24, true));
+      graficas.sem = crear("cc-sem", opcionesLinea(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]));
+      graficas.mes = crear("cc-mes", opcionesLinea(["S31", "S32", "S33", "S34", "S35", "S36", "S37", "S38", "S39"]));
+      graficas.ano = crear("cc-ano", opcionesLinea(["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]));
+      graficas.perf = crear("cc-perf", {
+        chart: { type: "radialBar", height: "100%", animations: { enabled: false } },
+        series: [0], colors: ["#f59e0b"],
+        plotOptions: { radialBar: { hollow: { size: "60%" }, dataLabels: { name: { show: false },
+          value: { fontSize: "28px", fontWeight: "bold", color: "#0f172a", formatter: (v) => Number(v).toFixed(1) + "%" } } } }
+      });
+      graficas.dt = crear("cc-dt", {
+        chart: { type: "donut", height: "100%", animations: { enabled: false } },
+        series: [0, 0, 0, 0, 0, 0, 0],
+        labels: ["Hombre", "Máquina", "Material", "Método", "Calidad", "Producción", "Otros"],
+        colors: ["#2563eb", "#d97706", "#eab308", "#16a34a", "#9333ea", "#dc2626", "#64748b"],
+        plotOptions: { pie: { donut: { size: "68%", labels: { show: true,
+          name: { fontSize: "11px", fontWeight: 900, color: "#64748b", offsetY: -5 },
+          value: { fontSize: "22px", fontWeight: 900, color: "#dc2626", offsetY: 5, formatter: (v) => v + " min" },
+          total: { show: true, showAlways: true, label: "TOTAL PARO", fontSize: "11px", fontWeight: 900, color: "#64748b",
+                   formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0) + " min" } } } } },
+        dataLabels: { enabled: true, formatter: (v, o) => { const m = o.w.globals.series[o.seriesIndex]; return m > 0 ? m + "m" : ""; } },
+        legend: { position: "right", fontSize: "10px", fontWeight: "bold", itemMargin: { vertical: 0 }, markers: { size: 5 } },
+        responsive: [{ breakpoint: 640, options: { legend: { position: "bottom" } } }]
+      });
+      graficas.listas = true;
+      return true;
+    }
+
+    const serie = (arr, n) => Array.from({ length: n }, (_, i) => num(Array.isArray(arr) ? arr[i] : 0));
+
+    function pintarCentroComando(d) {
+      if (!d || d.error) {
+        vacio($("cc-fallas"), d && d.error ? "Error del servidor: " + d.error : "Sin datos del centro de comando todavía.");
+        return;
+      }
+      if (!crearGraficas()) {
+        vacio($("cc-fallas"), "No se pudo cargar la librería de gráficas (revisa la conexión).");
+        return;
+      }
+
+      if (d.fechaTitulo) $("cc-tit-dia").textContent = "1. Producción " + d.fechaTitulo;
+
+      // 1. Por hora, con la misma marca ✅ / ⚠️ / ❌ de la app
+      const real24 = serie(d.dia?.real, 24), meta24 = serie(d.dia?.meta, 24);
+      const etiquetas = HORAS_24.map((h, i) => {
+        if (meta24[i] <= 0 && real24[i] <= 0) return h;
+        const p = meta24[i] > 0 ? real24[i] / meta24[i] * 100 : 0;
+        return h + (p >= 95 ? " ✅" : p >= 90 ? " ⚠️" : " ❌");
+      });
+      graficas.dia.updateOptions({ xaxis: { categories: etiquetas } }, false, false);
+      graficas.dia.updateSeries([{ name: "Producción Real", data: real24 }, { name: "Meta", data: meta24 }], false);
+
+      // 2, 3 y 4
+      [["sem", d.semana, 7], ["mes", d.mes, 9], ["ano", d.ano, 12]].forEach(([k, bloque, n]) => {
+        graficas[k].updateSeries([{ name: "Producción Real", data: serie(bloque?.real, n) },
+                                  { name: "Meta", data: serie(bloque?.meta, n) }], false);
+      });
+
+      // 5. Performance (mismos colores que la app: ≥95 verde, ≥80 ámbar, si no rojo)
+      const t = d.turno || {};
+      const perf = num(t.perfPct);
+      const color = perf >= 95 ? "#009B4A" : (perf >= 80 ? "#f59e0b" : "#dc2626");
+      graficas.perf.updateOptions({ colors: [color] }, false, false);
+      graficas.perf.updateSeries([Math.round(perf * 10) / 10], false);
+
+      // 6. Avance vs meta
+      const realT = num(t.real), metaT = num(t.meta);
+      const pct = metaT > 0 ? realT / metaT * 100 : 0;
+      $("cc-real").textContent = realT.toLocaleString("es-MX");
+      $("cc-meta").textContent = "/ " + metaT.toLocaleString("es-MX") + " Pz";
+      $("cc-barra").style.width = Math.min(pct, 100) + "%";
+      $("cc-barra").style.background = color;
+      $("cc-pct").textContent = pct.toFixed(1) + "%";
+
+      // 7. Downtime 6M
+      graficas.dt.updateSeries(serie(t.dt6M, 7), false);
+
+      // 8. Fallas que afectan producción
+      const crit = Array.isArray(t.criticas) ? t.criticas : [];
+      const cont = $("cc-fallas");
+      if (!crit.length) { cont.replaceChildren(el("div", "cc-ok", "✅ Todas las líneas superan el 85%")); return; }
+      cont.replaceChildren(...crit.map((c) => {
+        const fila = el("div", "cc-falla");
+        const izq = el("div");
+        const titulo = el("div", "l", "🔴 Línea " + c.linea);
+        if (num(c.dtMins) > 0) titulo.appendChild(el("small", null, "⏱️ " + num(c.dtMins) + " min"));
+        izq.append(titulo, el("div", "d", "(" + String(c.falla || "SIN FALLA REGISTRADA").toUpperCase() + ")"));
+        fila.append(izq, el("div", "p", num(c.perf).toFixed(1) + "%"));
+        return fila;
+      }));
+    }
 
     // ---------- Estado / errores ----------
     function pintarEstado(data, desdeCache) {
@@ -522,7 +690,7 @@
           const d = snap.data();
           pintarEstado(d, snap.metadata.fromCache);
           // Cada sección se pinta por separado: si una falla, las demás siguen visibles.
-          [[pintarPizarron, leerJSON(d.pizarron, null)],
+          [[pintarPizarron, leerJSON(d.pizarron, null)], [pintarCentroComando, leerJSON(d.centroComando, null)],
            [pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
            [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])]]
             .forEach(([fn, valor]) => { try { fn(valor); } catch (e) { console.error(fn.name, e); } });
