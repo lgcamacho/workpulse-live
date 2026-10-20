@@ -61,6 +61,23 @@
     .falla .lin { font-size: 11px; color: var(--gris); font-weight: 700; }
     .falla .mins { font-weight: 900; color: var(--rojo); white-space: nowrap; }
 
+    /* ----- Motor Production Board ----- */
+    .board-filtros { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: space-between;
+                     background: #f8fafc; border: 2px solid var(--texto); border-radius: 8px; padding: 8px 14px; margin-bottom: 12px; }
+    .board-filtros label { font-weight: 900; font-size: 14px; }
+    .board-filtros select { font: inherit; font-weight: 900; color: var(--verde); border: none; background: transparent; cursor: pointer; max-width: 260px; }
+    .board-fecha { font-weight: 900; font-size: 14px; }
+    .board-fecha b { color: var(--verde); }
+    .board-fecha.viejo b { color: var(--rojo); }
+    table.board { border: 2px solid var(--texto); }
+    table.board th { background: #e4e4e7; color: var(--texto); border: 1px solid #a1a1aa; font-size: 12px; padding: 6px; }
+    table.board th .sup { display: block; font-size: 9px; font-weight: 700; color: #3f3f46; white-space: normal; margin-top: 2px; }
+    table.board td { border: 1px solid #d4d4d8; font-size: clamp(15px, 1.6vw, 26px); font-weight: 900; padding: 8px 6px; }
+    table.board td.hora { font-size: clamp(13px, 1.2vw, 20px); color: #3f3f46; }
+    table.board td.meta { background: #f4f4f5; }
+    table.board td.nd { color: #a1a1aa; }
+    table.board td.bloq { background: #f1f5f9; opacity: .6; }
+    table.board tr.tot td { background: #e4e4e7; border-top: 3.5px solid #000; }
     .vacio { text-align: center; padding: 18px; font-weight: 800; color: var(--gris); }
     .aviso-error { background: #fef2f2; border: 2px solid var(--rojo); color: #991b1b; border-radius: 10px;
                    padding: 14px; font-weight: 800; margin-top: 16px; }
@@ -92,6 +109,16 @@
 
   <main>
     <div id="error"></div>
+
+    <h2>🏭 Motor Production Board</h2>
+    <section class="panel">
+      <div class="board-filtros">
+        <label>ÁREA: <select id="sel-area"></select></label>
+        <label>TURNO: <select id="sel-turno"></select></label>
+        <div class="board-fecha" id="board-fecha"></div>
+      </div>
+      <div class="tabla-wrap" id="board"><div class="vacio">Cargando…</div></div>
+    </section>
 
     <h2>Indicadores del turno</h2>
     <section class="kpis" id="kpis"><div class="vacio">Cargando…</div></section>
@@ -290,6 +317,150 @@
       }));
     }
 
+    // ---------- Motor Production Board ----------
+    const HORAS_BOARD = [["07:00","08:00"],["08:00","09:00"],["09:00","10:00"],["10:00","11:00"],["11:00","12:00"],
+                         ["12:00","13:00"],["13:00","14:00"],["14:00","15:00"],["15:00","16:00"]];
+    const PREF_KEY = "workpulse-live-filtros";
+    let pizarronActual = null;
+
+    function leerPref() { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; } }
+    function guardarPref(p) { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* sin almacenamiento */ } }
+
+    // Mismos umbrales que el pizarrón de la app: ≥95% verde, ≥90% amarillo, si no rojo.
+    function andon(real, meta) {
+      if (meta <= 0) return { bg: "#dc2626", color: "#ffffff" };
+      const p = (real / meta) * 100;
+      if (p >= 95) return { bg: "#009B4A", color: "#ffffff" };
+      if (p >= 90) return { bg: "#fbff00", color: "#000000" };
+      return { bg: "#dc2626", color: "#ffffff" };
+    }
+    function pintarAndon(td, estilo) { td.style.background = estilo.bg; td.style.color = estilo.color; }
+
+    function fechaHoyCliente() {
+      const d = new Date();
+      return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
+    }
+
+    function llenarSelect(sel, opciones, valor) {
+      sel.replaceChildren(...opciones.map((o) => { const op = el("option", null, o); op.value = o; return op; }));
+      sel.value = valor;
+    }
+
+    function pintarPizarron(p) {
+      if (p !== undefined) pizarronActual = p;
+      p = pizarronActual;
+      const cont = $("board");
+      if (!p) { vacio(cont, "El pizarrón todavía no se publica. Ejecuta publicarResumenEnFirestore en Apps Script."); return; }
+      const todas = Array.isArray(p.lineas) ? p.lineas.filter((l) => l && l.linea !== undefined) : [];
+      if (p && p.error) { vacio(cont, "No se pudo armar el pizarrón: " + p.error); return; }
+      if (!todas.length) { vacio(cont, "No hay líneas configuradas con supervisor."); return; }
+
+      // Filtros (se recuerdan en este navegador)
+      const pref = leerPref();
+      const selArea = $("sel-area"), selTurno = $("sel-turno");
+      const areas = [...new Set(todas.map((l) => String(l.area || "")))].sort();
+      let area = selArea.value || pref.area;
+      if (!areas.includes(area)) area = areas.includes("DRYERS") ? "DRYERS" : areas[0];
+      llenarSelect(selArea, areas, area);
+
+      const delArea = todas.filter((l) => String(l.area || "") === area);
+      const conteo = {};
+      delArea.forEach((l) => { conteo[l.turno] = (conteo[l.turno] || 0) + 1; });
+      const turnos = Object.keys(conteo).sort();
+      let turno = selTurno.value || pref.turno;
+      if (!turnos.includes(turno)) turno = turnos.sort((a, b) => conteo[b] - conteo[a])[0];
+      llenarSelect(selTurno, turnos.sort(), turno);
+      guardarPref({ area, turno });
+
+      const lineas = delArea.filter((l) => l.turno === turno);
+
+      // Fecha del cálculo
+      const hoy = fechaHoyCliente();
+      const esHoy = p.fecha === hoy;
+      const caja = $("board-fecha");
+      caja.replaceChildren(document.createTextNode("FECHA: "), el("b", null, p.fecha || "—"));
+      caja.classList.toggle("viejo", !esHoy);
+      if (!esHoy) caja.appendChild(document.createTextNode(" · ⚠️ no es el día de hoy"));
+
+      const ahora = new Date();
+      const horaActual = ahora.getHours() * 100 + ahora.getMinutes();
+
+      const t = el("table", "board");
+      t.style.minWidth = Math.max(700, 360 + lineas.length * 120) + "px";
+
+      // Encabezado
+      const trh = el("tr");
+      const thHora = el("th", null, "HORA"); thHora.colSpan = 2;
+      trh.append(thHora, el("th", null, "META"));
+      lineas.forEach((l) => {
+        const th = el("th", null, "LÍNEA " + l.linea);
+        th.appendChild(el("span", "sup", "👤 " + (l.supervisor || "SIN ASIGNAR")));
+        trh.appendChild(th);
+      });
+      ["SUMATORIA", "PERFORMANCE", "DELTA", "PALLETS"].forEach((x) => trh.appendChild(el("th", null, x)));
+      const thead = el("thead"); thead.appendChild(trh);
+
+      // Filas por hora
+      const tbody = el("tbody");
+      let acumMeta = 0, acumReal = 0, hayCaptura = false;
+      const totLinea = lineas.map(() => 0);
+
+      HORAS_BOARD.forEach(([ini, fin], idx) => {
+        const metaHora = lineas.reduce((a, l) => a + (parseInt(l.metas?.[idx], 10) || 0), 0);
+        const futura = esHoy && horaActual < parseInt(ini.replace(":", ""), 10);
+        const tr = el("tr");
+        tr.append(el("td", "hora", ini), el("td", "hora", fin), el("td", "meta", metaHora));
+
+        let suma = 0, capturada = false;
+        lineas.forEach((l, i) => {
+          const v = Array.isArray(l.real) ? l.real[idx] : null;
+          let td;
+          if (v !== null && v !== undefined && v !== "") {
+            const val = num(v);
+            td = el("td", null, val);
+            pintarAndon(td, andon(val, parseInt(l.metas?.[idx], 10) || 300));
+            suma += val; totLinea[i] += val; capturada = true;
+          } else {
+            td = el("td", futura ? "nd bloq" : "nd", futura ? "🔒" : "-");
+          }
+          tr.appendChild(td);
+        });
+
+        if (capturada) {
+          hayCaptura = true;
+          acumMeta += metaHora; acumReal += suma;
+          const est = andon(suma, metaHora);
+          const delta = suma - metaHora;
+          [suma, (metaHora > 0 ? Math.round(suma / metaHora * 100) : 0) + "%", (delta > 0 ? "+" : "") + delta, (suma / 198).toFixed(1)]
+            .forEach((x) => { const td = el("td", null, x); pintarAndon(td, est); tr.appendChild(td); });
+        } else {
+          ["-", "-", "-", futura ? "🔒" : "-"].forEach((x, i) => tr.appendChild(el("td", (i === 3 && futura) ? "nd bloq" : "nd", x)));
+        }
+        tbody.appendChild(tr);
+      });
+
+      // Totales
+      const trt = el("tr", "tot");
+      const tdTit = el("td", null, "TOTALES"); tdTit.colSpan = 2;
+      const tdMeta = el("td", null, hayCaptura ? acumMeta : 0); tdMeta.style.color = "var(--verde)";
+      trt.append(tdTit, tdMeta);
+      lineas.forEach((l, i) => trt.appendChild(el("td", null, hayCaptura ? totLinea[i] : 0)));
+      const estTot = andon(acumReal, acumMeta);
+      const deltaTot = acumReal - acumMeta;
+      [hayCaptura ? acumReal : 0, (hayCaptura && acumMeta > 0 ? Math.round(acumReal / acumMeta * 100) : 0) + "%",
+       hayCaptura ? (deltaTot > 0 ? "+" : "") + deltaTot : 0, hayCaptura ? (acumReal / 198).toFixed(1) : "0.0"]
+        .forEach((x) => { const td = el("td", null, x); if (hayCaptura) pintarAndon(td, estTot); trt.appendChild(td); });
+      tbody.appendChild(trt);
+
+      t.append(thead, tbody);
+      cont.replaceChildren(lineas.length ? t : el("div", "vacio", "No hay líneas para " + area + " / " + turno + "."));
+    }
+
+    $("sel-area").addEventListener("change", () => { $("sel-turno").value = ""; pintarPizarron(); });
+    $("sel-turno").addEventListener("change", () => pintarPizarron());
+    // Cada minuto se vuelve a pintar para que se desbloqueen las horas que ya empezaron.
+    setInterval(() => { if (pizarronActual) pintarPizarron(); }, 60000);
+
     // ---------- Estado / errores ----------
     function pintarEstado(data, desdeCache) {
       const caja = $("estado"), txt = $("estado-texto");
@@ -351,7 +522,8 @@
           const d = snap.data();
           pintarEstado(d, snap.metadata.fromCache);
           // Cada sección se pinta por separado: si una falla, las demás siguen visibles.
-          [[pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
+          [[pintarPizarron, leerJSON(d.pizarron, null)],
+           [pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
            [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])]]
             .forEach(([fn, valor]) => { try { fn(valor); } catch (e) { console.error(fn.name, e); } });
         }, (err) => { console.error("[WorkPulse Live]", err); mostrarError(mensajeDeError(err)); });
