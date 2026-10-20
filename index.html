@@ -151,7 +151,7 @@
   <div class="login" id="login">
     <div class="login-card">
       <h1>WORKPULSE LIVE</h1>
-      <p>Tablero de producción en tiempo real.<br>Acceso solo con cuenta <b>@nidec-ga.com</b>.</p>
+      <p>Tablero de producción en tiempo real.<br>Acceso solo para cuentas autorizadas.</p>
       <button type="button" class="btn-google" id="btn-login" disabled>
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
         <span id="btn-login-txt">Verificando sesión…</span>
@@ -704,15 +704,15 @@
       });
     }
 
-    // ---------- Acceso: solo cuentas verificadas @nidec-ga.com ----------
-    // La validación real está en las Reglas de Firestore; esta revisión solo mejora el mensaje al usuario.
-    const DOMINIO = "nidec-ga.com";
+    // ---------- Acceso: cuentas @nidec-ga.com + correos autorizados ----------
+    // La lista de quién puede entrar vive SOLO en las Reglas de Firestore (no es pública).
+    // Aquí solo pedimos una cuenta de Google verificada; si las reglas la rechazan, se cierra la sesión.
     let refDoc = null;
     let cancelar = null;
     let auth = null;
     let mensajePendiente = "";
 
-    const correoValido = (u) => !!u && u.emailVerified === true && String(u.email || "").toLowerCase().endsWith("@" + DOMINIO);
+    const correoValido = (u) => !!u && u.emailVerified === true && !!u.email;
 
     function detener() { if (cancelar) { cancelar(); cancelar = null; } }
 
@@ -761,7 +761,16 @@
            [pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
            [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])]]
             .forEach(([fn, valor]) => { try { fn(valor); } catch (e) { console.error(fn.name, e); } });
-        }, (err) => { console.error("[WorkPulse Live]", err); mostrarError(mensajeDeError(err)); });
+        }, async (err) => {
+          console.error("[WorkPulse Live]", err);
+          if (err?.code === "permission-denied" && auth?.currentUser) {
+            // Las reglas no autorizan esta cuenta: se cierra la sesión y se explica por qué.
+            mensajePendiente = "La cuenta " + auth.currentUser.email + " no tiene acceso a este tablero. Entra con una cuenta autorizada.";
+            await signOut(auth);
+            return;
+          }
+          mostrarError(mensajeDeError(err));
+        });
       } catch (err) {
         if (!cancelar) mostrarError(mensajeDeError(err));
       }
@@ -778,8 +787,8 @@
       refDoc = doc(getFirestore(app), "resumen_ejecutivo", "ultimo_calculo");
 
       const proveedor = new GoogleAuthProvider();
-      // "hd" solo sugiere la cuenta de la empresa en el selector de Google; no es una restricción.
-      proveedor.setCustomParameters({ hd: DOMINIO, prompt: "select_account" });
+      // Siempre muestra el selector de cuentas (útil si el navegador tiene varias sesiones de Google).
+      proveedor.setCustomParameters({ prompt: "select_account" });
 
       $("btn-login").addEventListener("click", async () => {
         $("btn-login").disabled = true;
@@ -808,7 +817,7 @@
           return;
         }
         if (!correoValido(u)) {
-          mensajePendiente = "La cuenta " + (u.email || "seleccionada") + " no es @" + DOMINIO + ". Entra con tu cuenta de Nidec.";
+          mensajePendiente = "La cuenta " + (u.email || "seleccionada") + " no tiene un correo verificado.";
           await signOut(auth);
           return;
         }
