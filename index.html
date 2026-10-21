@@ -73,6 +73,8 @@
                   border-radius: 8px; padding: 12px 18px; font: inherit; font-weight: 900; font-size: 15px; cursor: pointer; }
     .btn-google:hover:not(:disabled) { border-color: var(--verde); background: #f0fdf4; }
     .btn-google:disabled { opacity: .6; cursor: wait; }
+    .gsi-btn { display: flex; justify-content: center; min-height: 44px; }
+    .gsi-btn[hidden], .btn-google[hidden] { display: none; }
     .login-msg { color: var(--rojo) !important; min-height: 1em; margin-bottom: 0 !important; }
     .usuario-box { font-size: 11px; font-weight: 800; color: var(--gris); margin-top: 4px; }
     .btn-salir { background: none; border: none; color: var(--rojo); font: inherit; font-weight: 900; cursor: pointer; padding: 0; text-decoration: underline; }
@@ -156,6 +158,7 @@
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
         <span id="btn-login-txt">Verificando sesión…</span>
       </button>
+      <div id="gsi-btn" class="gsi-btn" hidden></div>
       <p class="login-msg" id="login-msg"></p>
     </div>
   </div>
@@ -212,7 +215,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
     import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, onAuthStateChanged, signOut }
       from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
     // ======================= CONFIGURACIÓN =======================
@@ -227,6 +230,10 @@
       appId: "1:187436233074:web:249101251e6f53b5012deb"
     };
     // URL de la app completa en Apps Script (para capturar; pide cuenta de Nidec)
+    // ID de cliente web de Google (Firebase Console > Authentication > Método de acceso > Google >
+    // "Configuración del SDK web" > ID de cliente web). No es secreto. Si se deja vacío, se usa la
+    // ventana emergente de Firebase, que falla en Safari de iPhone y en navegadores dentro de apps.
+    const GOOGLE_CLIENT_ID = "187436233074-v4mjc6lal0h1f71b3hgl6aii5286trpr.apps.googleusercontent.com";
     const URL_APP_CAPTURA = "https://script.google.com/a/macros/nidec-ga.com/s/AKfycbyEIR6w67JD5g97LiSS6Obqm23u_8fylrMVRET5AzaITeP5OWSLqw6WoduPmCwp_Jkz/exec";
     const MINUTOS_DATO_VIEJO = 15;
     // =============================================================
@@ -722,7 +729,7 @@
       $("login").hidden = false;
       $("btn-login").disabled = false;
       $("btn-login-txt").textContent = "Iniciar sesión con Google";
-      $("login-msg").textContent = mensaje || "";
+      $("login-msg").textContent = mensaje || avisoNavegador();
       $("estado-texto").textContent = "Sin sesión";
     }
 
@@ -776,6 +783,54 @@
       }
     }
 
+    // Navegadores dentro de apps (WhatsApp, Facebook, Instagram…) no permiten bien el inicio de sesión de Google.
+    function avisoNavegador() {
+      const ua = navigator.userAgent || "";
+      return /WhatsApp|FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|LinkedInApp/i.test(ua)
+        ? "Estás en el navegador de otra app. Abre este enlace en Safari o Chrome para iniciar sesión."
+        : "";
+    }
+
+    // Botón oficial "Iniciar sesión con Google" (Google Identity Services). Obtiene el token directamente
+    // de Google y se lo pasa a Firebase, sin depender de la página intermedia de firebaseapp.com.
+    function cargarBotonGoogle() {
+      return new Promise((resolve, reject) => {
+        if (window.google?.accounts?.id) return resolve();
+        const sc = document.createElement("script");
+        sc.src = "https://accounts.google.com/gsi/client";
+        sc.async = true;
+        sc.onload = () => resolve();
+        sc.onerror = () => reject(new Error("No se pudo cargar el botón de Google"));
+        document.head.appendChild(sc);
+      });
+    }
+
+    async function prepararBotonGoogle() {
+      await cargarBotonGoogle();
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        ux_mode: "popup",
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: async (resp) => {
+          $("login-msg").textContent = "";
+          try {
+            await signInWithCredential(auth, GoogleAuthProvider.credential(resp.credential));
+          } catch (err) {
+            console.error("[Login GIS]", err);
+            $("login-msg").textContent = mensajeDeLogin(err);
+          }
+        }
+      });
+      const ancho = Math.min(320, Math.max(220, $("gsi-btn").parentElement.clientWidth - 48));
+      google.accounts.id.renderButton($("gsi-btn"), {
+        type: "standard", theme: "outline", size: "large", text: "signin_with",
+        shape: "rectangular", logo_alignment: "left", locale: "es", width: ancho
+      });
+      $("btn-login").hidden = true;
+      $("gsi-btn").hidden = false;
+    }
+
     function arrancar() {
       if (firebaseConfig.projectId.startsWith("TU_")) {
         $("login").hidden = true; $("contenido").hidden = false;
@@ -802,8 +857,15 @@
         }
       });
 
+      if (GOOGLE_CLIENT_ID) {
+        prepararBotonGoogle().catch((err) => {
+          console.error("[GIS]", err);   // si falla, se queda el botón de ventana emergente
+        });
+      }
+
       $("btn-salir").addEventListener("click", async () => {
         detener();
+        try { window.google?.accounts?.id?.disableAutoSelect(); } catch { /* sin GIS */ }
         await signOut(auth);
         location.reload();   // limpia de la memoria los datos que se mostraron
       });
