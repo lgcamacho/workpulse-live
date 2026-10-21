@@ -19,9 +19,9 @@
     .estado { font-size: 12px; font-weight: 800; color: var(--gris); text-align: right; }
     .estado.alerta { color: #b45309; }
     .estado.error { color: var(--rojo); }
-    .btn-captura { display: inline-block; background: var(--verde); color: #fff; text-decoration: none; font-weight: 900;
+    .btn-captura-old { display: inline-block; background: var(--verde); color: #fff; text-decoration: none; font-weight: 900;
                    font-size: 12px; padding: 9px 14px; border-radius: 6px; margin-top: 6px; }
-    .btn-captura:hover { background: var(--verde-osc); }
+    .btn-captura-old:hover { background: var(--verde-osc); }
 
     main { padding: 16px 20px 30px; max-width: 1600px; margin: 0 auto; }
     h2 { font-size: 14px; font-weight: 900; color: var(--verde); text-transform: uppercase; margin: 22px 0 10px; }
@@ -61,23 +61,79 @@
     .falla .lin { font-size: 11px; color: var(--gris); font-weight: 700; }
     .falla .mins { font-weight: 900; color: var(--rojo); white-space: nowrap; }
 
-    /* ----- Inicio de sesión ----- */
+    /* ----- Acceso: entrar / darse de alta ----- */
     .login { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-             background: var(--fondo); padding: 16px; }
-    .login[hidden], .usuario-box[hidden] { display: none; }
+             background: var(--fondo); padding: 16px; overflow-y: auto; }
+    .login[hidden], .usuario-box[hidden], .modal[hidden], .form[hidden], #panel-admin[hidden], .btn-admin[hidden] { display: none; }
     .login-card { background: #fff; border: 2px solid var(--verde); border-top: 6px solid var(--verde); border-radius: 12px;
-                  padding: 28px 24px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
-    .login-card h1 { margin: 0 0 6px; color: var(--verde); font-size: 26px; font-weight: 900; }
-    .login-card p { color: var(--gris); font-weight: 700; font-size: 14px; margin: 8px 0 18px; }
-    .btn-google { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: var(--texto); border: 2px solid #cbd5e1;
-                  border-radius: 8px; padding: 12px 18px; font: inherit; font-weight: 900; font-size: 15px; cursor: pointer; }
-    .btn-google:hover:not(:disabled) { border-color: var(--verde); background: #f0fdf4; }
-    .btn-google:disabled { opacity: .6; cursor: wait; }
-    .gsi-btn { display: flex; justify-content: center; min-height: 44px; }
-    .gsi-btn[hidden], .btn-google[hidden] { display: none; }
-    .login-msg { color: var(--rojo) !important; min-height: 1em; margin-bottom: 0 !important; }
-    .usuario-box { font-size: 11px; font-weight: 800; color: var(--gris); margin-top: 4px; }
+                  padding: 26px 22px; max-width: 420px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,.08); margin: auto; }
+    .login-card h1 { margin: 0 0 4px; color: var(--verde); font-size: 26px; font-weight: 900; text-align: center; }
+    .login-card .lema { color: var(--gris); font-weight: 700; font-size: 13px; margin: 0 0 18px; text-align: center; }
+    .form { display: flex; flex-direction: column; gap: 12px; }
+    .form h3 { margin: 0; font-size: 15px; font-weight: 900; color: var(--texto); }
+    .campo { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 800; color: #334155; }
+    .campo input, .campo select { font: inherit; font-size: 16px; font-weight: 600; padding: 10px 12px; border: 2px solid #cbd5e1;
+                                  border-radius: 8px; background: #fff; color: var(--texto); width: 100%; }
+    .campo input:focus, .campo select:focus { outline: none; border-color: var(--verde); }
+    .campo small { font-weight: 600; color: var(--gris); }
+    .btn-prim { background: var(--verde); color: #fff; border: none; border-radius: 8px; padding: 12px; font: inherit;
+                font-size: 15px; font-weight: 900; cursor: pointer; }
+    .btn-prim:hover:not(:disabled) { background: var(--verde-osc); }
+    .btn-prim:disabled { opacity: .6; cursor: wait; }
+    .btn-sec { background: #fff; color: var(--texto); border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; font: inherit;
+               font-weight: 800; cursor: pointer; }
+    .btn-sec:hover { border-color: var(--verde); }
+    .btn-link { background: none; border: none; color: var(--verde); font: inherit; font-weight: 900; cursor: pointer; padding: 0;
+                text-decoration: underline; }
+    .cambio { text-align: center; font-size: 13px; font-weight: 700; color: var(--gris); }
+    .login-msg { color: var(--rojo); font-weight: 800; font-size: 13px; min-height: 1em; margin: 0; text-align: center; }
+    .ok-msg { color: var(--verde); }
+    .usuario-box { font-size: 12px; font-weight: 800; color: var(--texto); margin-top: 6px; display: flex; flex-wrap: wrap;
+                   gap: 6px 10px; justify-content: flex-end; align-items: center; }
+    .usuario-box .rol { font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #334155; }
+    .usuario-box .rol.admin { background: #fef3c7; color: #92400e; }
     .btn-salir { background: none; border: none; color: var(--rojo); font: inherit; font-weight: 900; cursor: pointer; padding: 0; text-decoration: underline; }
+    .btn-admin { background: #fffbeb; color: #92400e; border: 2px solid #f59e0b; border-radius: 6px; padding: 6px 10px; font: inherit;
+                 font-size: 12px; font-weight: 900; cursor: pointer; }
+
+    /* ----- Captura en el pizarrón ----- */
+    table.board td.editable { cursor: pointer; outline: 2px dashed rgba(0,155,74,.55); outline-offset: -4px; }
+    table.board td.editable:hover { filter: brightness(.95); }
+    table.board td .marca { font-size: .55em; margin-left: 3px; vertical-align: super; }
+    table.board th.mia { background: #dcfce7; }
+    .ayuda-captura { font-size: 12px; font-weight: 800; color: #166534; background: #f0fdf4; border: 1px solid #86efac;
+                     border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
+    .modal { position: fixed; inset: 0; z-index: 60; background: rgba(15,23,42,.55); display: flex; align-items: center;
+             justify-content: center; padding: 16px; overflow-y: auto; }
+    .modal-card { background: #fff; border-radius: 12px; border-top: 6px solid var(--verde); padding: 20px; width: 100%;
+                  max-width: 520px; margin: auto; }
+    .modal-card h3 { margin: 0 0 4px; color: var(--verde); font-weight: 900; }
+    .modal-sub { color: var(--gris); font-weight: 800; font-size: 12px; margin-bottom: 14px; }
+    .grid-6m { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .grid-6m .campo input { padding: 8px; }
+    .modal-botones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+    .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 70; background: var(--texto); color: #fff;
+             font-weight: 800; font-size: 13px; padding: 10px 16px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+             max-width: calc(100% - 32px); }
+
+    /* ----- Panel de administración ----- */
+    #panel-admin { border-color: #f59e0b; }
+    .admin-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .admin-head h2 { margin: 0; color: #92400e; }
+    .admin-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
+    .admin-caja { border: 1px solid var(--borde); border-radius: 8px; padding: 12px; background: #fff; }
+    .admin-caja h3 { margin: 0 0 10px; font-size: 13px; font-weight: 900; text-transform: uppercase; color: var(--texto); }
+    table.usuarios td, table.usuarios th { text-align: left; }
+    table.usuarios .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+    table.usuarios .acciones button { font: inherit; font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 5px;
+                                      border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
+    table.usuarios .acciones button.peligro { color: var(--rojo); border-color: #fecaca; }
+    .chip { font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
+    .chip.admin { background: #fef3c7; color: #92400e; } .chip.sup { background: #e0f2fe; color: #075985; }
+    .chip.off { background: #fee2e2; color: #991b1b; }
+    @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } .grid-6m { grid-template-columns: repeat(2, 1fr); }
+                                .usuario-box { justify-content: flex-start; } }
+
     /* ----- Motor Production Board ----- */
     .board-filtros { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: space-between;
                      background: #f8fafc; border: 2px solid var(--texto); border-radius: 8px; padding: 8px 14px; margin-bottom: 12px; }
@@ -137,34 +193,106 @@
   <header>
     <div>
       <h1>WORKPULSE LIVE</h1>
-      <div class="sub">Resumen de producción en tiempo real · solo lectura</div>
+      <div class="sub">Resumen y captura de producción en tiempo real</div>
     </div>
     <div class="estado" id="estado">
       <div id="estado-texto">Conectando…</div>
-      <!-- Enlace a la app completa (requiere cuenta de Nidec) -->
-      <a class="btn-captura" id="btn-captura" target="_blank" rel="noopener">Abrir WorkPulse para capturar ↗</a>
       <div class="usuario-box" id="usuario-box" hidden>
-        <span id="usuario"></span> · <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
+        <span id="usuario"></span>
+        <button type="button" class="btn-admin" id="btn-admin" hidden>⚙️ Administración</button>
+        <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
       </div>
     </div>
   </header>
 
-  <!-- Pantalla de acceso: solo cuentas @nidec-ga.com -->
+  <!-- Pantalla de acceso: usuario y contraseña, o darse de alta -->
   <div class="login" id="login">
     <div class="login-card">
       <h1>WORKPULSE LIVE</h1>
-      <p>Tablero de producción en tiempo real.<br>Acceso solo para cuentas autorizadas.</p>
-      <button type="button" class="btn-google" id="btn-login" disabled>
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.8c4.3-4 6.9-9.9 6.9-17.2z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-7.4-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>
-        <span id="btn-login-txt">Verificando sesión…</span>
-      </button>
-      <div id="gsi-btn" class="gsi-btn" hidden></div>
+      <p class="lema">Tablero de producción en tiempo real</p>
+
+      <form class="form" id="form-entrar" autocomplete="on" novalidate>
+        <label class="campo">Usuario
+          <input id="in-usuario" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+        </label>
+        <label class="campo">Contraseña
+          <input id="in-pass" name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="btn-prim" id="btn-entrar" disabled>Verificando…</button>
+        <p class="cambio">¿No tienes cuenta? <button type="button" class="btn-link" id="ir-alta">Darte de alta</button></p>
+      </form>
+
+      <form class="form" id="form-alta" autocomplete="off" novalidate hidden>
+        <h3>Darte de alta</h3>
+        <label class="campo">Nombre completo
+          <input id="al-nombre" autocomplete="name" maxlength="80" required>
+        </label>
+        <label class="campo">Usuario
+          <input id="al-usuario" autocapitalize="none" spellcheck="false" maxlength="30" required>
+          <small>3 a 30 caracteres: letras, números, punto, guion o guion bajo. Sin espacios.</small>
+        </label>
+        <label class="campo">Contraseña
+          <input id="al-pass" type="password" autocomplete="new-password" required>
+          <small>Mínimo 6 caracteres.</small>
+        </label>
+        <label class="campo">Confirmar contraseña
+          <input id="al-pass2" type="password" autocomplete="new-password" required>
+        </label>
+        <label class="campo">Línea de la que eres encargado
+          <select id="al-linea" required><option value="">Cargando líneas…</option></select>
+        </label>
+        <label class="campo">Código de registro
+          <input id="al-codigo" autocapitalize="characters" spellcheck="false" required>
+          <small>Te lo da el administrador de la planta.</small>
+        </label>
+        <button type="submit" class="btn-prim" id="btn-alta">Crear mi cuenta</button>
+        <p class="cambio">¿Ya tienes cuenta? <button type="button" class="btn-link" id="ir-entrar">Entrar</button></p>
+      </form>
+
       <p class="login-msg" id="login-msg"></p>
     </div>
   </div>
 
   <main id="contenido" hidden>
     <div id="error"></div>
+
+    <section class="panel" id="panel-admin" hidden>
+      <div class="admin-head">
+        <h2>⚙️ Administración de usuarios</h2>
+        <button type="button" class="btn-sec" id="cerrar-admin">Cerrar panel</button>
+      </div>
+      <div class="admin-grid">
+        <div>
+          <div class="admin-caja">
+            <h3>Crear usuario</h3>
+            <form class="form" id="form-crear" autocomplete="off" novalidate>
+              <label class="campo">Nombre completo <input id="cr-nombre" maxlength="80"></label>
+              <label class="campo">Usuario <input id="cr-usuario" autocapitalize="none" spellcheck="false" maxlength="30"></label>
+              <label class="campo">Contraseña <input id="cr-pass" type="text" autocomplete="off"><small>Mínimo 6 caracteres. Compártela con la persona.</small></label>
+              <label class="campo">Rol
+                <select id="cr-rol"><option value="SUPERVISOR">SUPERVISOR (solo sus líneas)</option><option value="ADMIN">ADMIN (todo el panorama)</option></select>
+              </label>
+              <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. Un ADMIN puede dejarlo vacío.</small></label>
+              <button type="submit" class="btn-prim" id="btn-crear">Crear usuario</button>
+              <p class="login-msg" id="cr-msg"></p>
+            </form>
+          </div>
+          <div class="admin-caja" style="margin-top:16px;">
+            <h3>Código de registro</h3>
+            <form class="form" id="form-codigo" novalidate>
+              <label class="campo">Código actual <input id="cod-valor" autocapitalize="characters" spellcheck="false" maxlength="40">
+                <small>Quien se dé de alta lo necesita. Cámbialo si se filtra.</small></label>
+              <button type="submit" class="btn-sec">Guardar código</button>
+              <p class="login-msg" id="cod-msg"></p>
+            </form>
+          </div>
+        </div>
+        <div class="admin-caja tabla-wrap">
+          <h3>Usuarios</h3>
+          <div id="lista-usuarios"><div class="vacio">Cargando…</div></div>
+        </div>
+      </div>
+    </section>
 
     <h2>🏭 Motor Production Board</h2>
     <section class="panel">
@@ -211,11 +339,42 @@
     </div>
   </main>
 
+  <!-- Ventana para capturar una hora del pizarrón -->
+  <div class="modal" id="modal-captura" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cap-titulo">
+      <h3 id="cap-titulo">Capturar</h3>
+      <div class="modal-sub" id="cap-sub"></div>
+      <form class="form" id="form-captura" novalidate>
+        <label class="campo">Producción real (piezas)
+          <input id="cap-real" type="number" inputmode="numeric" min="0" max="100000" step="1">
+        </label>
+        <div class="campo">Paros 6M (minutos)</div>
+        <div class="grid-6m">
+          <label class="campo">Hombre <input id="cap-hombre" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+          <label class="campo">Máquina <input id="cap-maquina" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+          <label class="campo">Material <input id="cap-material" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+          <label class="campo">Método <input id="cap-metodo" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+          <label class="campo">Calidad <input id="cap-calidad" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+          <label class="campo">Producción <input id="cap-produccion" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+          <label class="campo">Otros <input id="cap-otros" type="number" inputmode="numeric" min="0" max="600" step="1"></label>
+        </div>
+        <label class="campo">Falla <input id="cap-falla" maxlength="200" autocapitalize="characters"></label>
+        <label class="campo">Comentario <input id="cap-comentario" maxlength="200" autocapitalize="characters"></label>
+        <p class="login-msg" id="cap-msg"></p>
+        <div class="modal-botones">
+          <button type="button" class="btn-sec" id="cap-cancelar">Cancelar</button>
+          <button type="submit" class="btn-prim" id="cap-guardar">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, onAuthStateChanged, signOut }
+    import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where,
+             serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut }
       from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
     // ======================= CONFIGURACIÓN =======================
@@ -229,16 +388,11 @@
       messagingSenderId: "187436233074",
       appId: "1:187436233074:web:249101251e6f53b5012deb"
     };
-    // URL de la app completa en Apps Script (para capturar; pide cuenta de Nidec)
-    // ID de cliente web de Google (Firebase Console > Authentication > Método de acceso > Google >
-    // "Configuración del SDK web" > ID de cliente web). No es secreto. Si se deja vacío, se usa la
-    // ventana emergente de Firebase, que falla en Safari de iPhone y en navegadores dentro de apps.
-    const GOOGLE_CLIENT_ID = "187436233074-v4mjc6lal0h1f71b3hgl6aii5286trpr.apps.googleusercontent.com";
-    const URL_APP_CAPTURA = "https://script.google.com/a/macros/nidec-ga.com/s/AKfycbyEASK4qasxRuua-jiq6DcHim_Kw4SOoptsTY-rtrGeooCQIsPAKVqSSV0aMZ2GfBEP/exec";
+    // Los usuarios se guardan en Firebase Authentication como <usuario>@usuarios.workpulse.app
+    const DOMINIO_USUARIOS = "@usuarios.workpulse.app";
     const MINUTOS_DATO_VIEJO = 15;
     // =============================================================
 
-    document.getElementById("btn-captura").href = URL_APP_CAPTURA;
 
     // ---------- Utilidades seguras: los datos solo se insertan con textContent ----------
     const $ = (id) => document.getElementById(id);
@@ -481,7 +635,8 @@
       const thHora = el("th", null, "HORA"); thHora.colSpan = 2;
       trh.append(thHora, el("th", null, "META"));
       lineas.forEach((l) => {
-        const th = el("th", null, "LÍNEA " + l.linea);
+        const mia = esHoy && puedeEditarLinea(l.linea);
+        const th = el("th", mia ? "mia" : null, (mia ? "✏️ " : "") + "LÍNEA " + l.linea);
         th.appendChild(el("span", "sup", "👤 " + (l.supervisor || "SIN ASIGNAR")));
         trh.appendChild(th);
       });
@@ -501,7 +656,13 @@
 
         let suma = 0, capturada = false;
         lineas.forEach((l, i) => {
-          const v = Array.isArray(l.real) ? l.real[idx] : null;
+          let v = Array.isArray(l.real) ? l.real[idx] : null;
+          // Capturas hechas desde esta página que todavía no llegan a la hoja (o que fueron rechazadas)
+          const cap = esHoy ? capturasHoy.get(String(l.linea) + "_" + idx) : null;
+          let marca = "", aviso = "";
+          if (cap && cap.estado === "pendiente") { v = cap.real; marca = "⏳"; aviso = "Guardado, pasando a la hoja…"; }
+          else if (cap && cap.estado === "rechazado") { marca = "⚠️"; aviso = "Captura rechazada: " + (cap.motivo || ""); }
+
           let td;
           if (v !== null && v !== undefined && v !== "") {
             const val = num(v);
@@ -510,6 +671,12 @@
             suma += val; totLinea[i] += val; capturada = true;
           } else {
             td = el("td", futura ? "nd bloq" : "nd", futura ? "🔒" : "-");
+          }
+          if (marca) { td.appendChild(el("span", "marca", marca)); td.title = aviso; }
+          if (esHoy && !futura && puedeEditarLinea(l.linea)) {
+            td.classList.add("editable");
+            if (!td.title) td.title = "Toca para capturar";
+            td.addEventListener("click", () => abrirCaptura(l, idx, cap));
           }
           tr.appendChild(td);
         });
@@ -541,7 +708,15 @@
       tbody.appendChild(trt);
 
       t.append(thead, tbody);
-      cont.replaceChildren(lineas.length ? t : el("div", "vacio", "No hay líneas con supervisor configuradas para " + area + " · " + turno + "."));
+      const piezas = [];
+      if (perfilActual && esHoy) {
+        const txt = perfilActual.rol === "ADMIN"
+          ? "✏️ Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar."
+          : "✏️ Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
+        piezas.push(el("div", "ayuda-captura", txt));
+      }
+      piezas.push(lineas.length ? t : el("div", "vacio", "No hay líneas con supervisor configuradas para " + area + " · " + turno + "."));
+      cont.replaceChildren(...piezas);
     }
 
     $("sel-area").addEventListener("change", () => pintarPizarron());
@@ -711,49 +886,229 @@
       });
     }
 
-    // ---------- Acceso: cuentas @nidec-ga.com + correos autorizados ----------
-    // La lista de quién puede entrar vive SOLO en las Reglas de Firestore (no es pública).
-    // Aquí solo pedimos una cuenta de Google verificada; si las reglas la rechazan, se cierra la sesión.
-    let refDoc = null;
-    let cancelar = null;
-    let auth = null;
+    // ---------- Sesión con usuario y contraseña ----------
+    // Firebase Authentication guarda cada usuario como <usuario>@usuarios.workpulse.app.
+    // Quién puede ver y capturar lo deciden las Reglas de Firestore usando el perfil usuarios/{uid}.
+    let app = null, auth = null, db = null, refDoc = null;
+    let cancelar = null;            // escucha del resumen
+    let cancelarCapturas = null;    // escucha de las capturas de hoy
+    let cancelarPerfil = null;      // escucha del perfil propio (si un admin lo cambia, se aplica al momento)
+    let cancelarUsuarios = null;    // escucha de la lista de usuarios (solo admins)
+    let fechaCapturas = "";
+    let perfilActual = null;        // { uid, usuario, nombre, lineas[], rol, activo }
     let mensajePendiente = "";
+    let creandoPerfil = false;
+    let capturaActual = null;
+    const capturasHoy = new Map();
 
-    const correoValido = (u) => !!u && u.emailVerified === true && !!u.email;
+    const USUARIO_RE = /^[a-z0-9._-]{3,30}$/;
+    const limpiarUsuario = (u) => String(u || "").trim().toLowerCase();
+    const correoDe = (u) => limpiarUsuario(u) + DOMINIO_USUARIOS;
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const hoyISO = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+    const lineasDeTexto = (t) => [...new Set(String(t || "").split(/[,;\s]+/).map((x) => x.replace(/[^0-9A-Za-z]/g, "")).filter(Boolean))];
 
-    function detener() { if (cancelar) { cancelar(); cancelar = null; } }
+    function puedeEditarLinea(linea) {
+      if (!perfilActual || perfilActual.activo !== true) return false;
+      if (perfilActual.rol === "ADMIN") return true;
+      return (perfilActual.lineas || []).map(String).includes(String(linea));
+    }
+
+    function detenerEscuchas() {
+      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios].forEach((f) => { if (f) f(); });
+      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = null;
+    }
+    const detener = detenerEscuchas;
+
+    let timerToast = null;
+    function toast(texto, ms = 3500) {
+      let t = document.querySelector(".toast");
+      if (!t) { t = el("div", "toast"); document.body.appendChild(t); }
+      t.textContent = texto;
+      t.hidden = false;
+      clearTimeout(timerToast);
+      timerToast = setTimeout(() => { t.hidden = true; }, ms);
+    }
+
+    // ---------- Pantallas de acceso ----------
+    function msgLogin(texto, ok = false) {
+      const m = $("login-msg");
+      m.textContent = texto || "";
+      m.classList.toggle("ok-msg", ok);
+    }
+    function verEntrar() { $("form-entrar").hidden = false; $("form-alta").hidden = true; msgLogin(""); $("in-usuario").focus(); }
+    function verAlta() { $("form-entrar").hidden = true; $("form-alta").hidden = false; msgLogin(""); cargarLineasAlta(); $("al-nombre").focus(); }
 
     function mostrarLogin(mensaje) {
       $("contenido").hidden = true;
       $("usuario-box").hidden = true;
+      $("panel-admin").hidden = true;
+      $("modal-captura").hidden = true;
       $("login").hidden = false;
-      $("btn-login").disabled = false;
-      $("btn-login-txt").textContent = "Iniciar sesión con Google";
-      $("login-msg").textContent = mensaje || avisoNavegador();
+      $("btn-entrar").disabled = false;
+      $("btn-entrar").textContent = "Entrar";
+      if (mensaje) msgLogin(mensaje);        // si no hay mensaje nuevo, conserva el que ya se mostraba
       $("estado-texto").textContent = "Sin sesión";
     }
 
-    function mostrarApp(u) {
-      $("login").hidden = true;
-      $("contenido").hidden = false;   // visible ANTES de crear las gráficas, para que tomen su tamaño
-      $("usuario").textContent = u.email;
-      $("usuario-box").hidden = false;
+    function pintarUsuarioActual() {
+      const p = perfilActual;
+      const caja = $("usuario");
+      const rol = el("span", "rol" + (p.rol === "ADMIN" ? " admin" : ""), p.rol === "ADMIN" ? "ADMIN" : "Línea " + (p.lineas || []).join(", "));
+      caja.replaceChildren(document.createTextNode((p.nombre || p.usuario) + " (" + p.usuario + ") "), rol);
+      $("btn-admin").hidden = p.rol !== "ADMIN";
+      if (p.rol !== "ADMIN") cerrarAdmin();
     }
 
-    function mensajeDeLogin(err) {
+    function mostrarApp() {
+      $("login").hidden = true;
+      $("contenido").hidden = false;   // visible ANTES de crear las gráficas, para que tomen su tamaño
+      $("usuario-box").hidden = false;
+      pintarUsuarioActual();
+    }
+
+    function mensajeAuth(err) {
       switch (err?.code) {
-        case "auth/popup-closed-by-user":
-        case "auth/cancelled-popup-request": return "";
-        case "auth/popup-blocked": return "El navegador bloqueó la ventana de Google. Permite ventanas emergentes para este sitio e intenta de nuevo.";
-        case "auth/unauthorized-domain": return "Este dominio no está autorizado en Firebase (Authentication → Configuración → Dominios autorizados).";
-        case "auth/operation-not-allowed": return "El inicio de sesión con Google no está habilitado en Firebase (Authentication → Método de acceso).";
-        case "auth/network-request-failed": return "Sin conexión con Google. Revisa tu internet.";
-        default: return "No se pudo iniciar sesión: " + (err?.message || err);
+        case "auth/invalid-credential":
+        case "auth/invalid-login-credentials":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+        case "auth/invalid-email": return "Usuario o contraseña incorrectos.";
+        case "auth/email-already-in-use": return "Ese usuario ya existe. Elige otro.";
+        case "auth/weak-password": return "La contraseña debe tener al menos 6 caracteres.";
+        case "auth/too-many-requests": return "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.";
+        case "auth/network-request-failed": return "Sin conexión. Revisa tu internet.";
+        case "auth/user-disabled": return "Tu cuenta está desactivada.";
+        case "auth/operation-not-allowed": return "El acceso con usuario y contraseña no está habilitado en Firebase (Authentication → Método de acceso → Correo electrónico/contraseña).";
+        case "permission-denied": return "Permiso denegado.";
+        case "unavailable": return "Sin conexión con la base de datos. Revisa tu internet.";
+        default: return err?.message || String(err);
       }
     }
 
+    async function cargarLineasAlta() {
+      const sel = $("al-linea");
+      try {
+        const snap = await getDoc(doc(db, "config", "lineas"));
+        const lineas = snap.exists() ? (snap.data().lineas || []).map(String) : [];
+        const primera = el("option", null, lineas.length ? "Selecciona tu línea" : "No hay líneas publicadas todavía");
+        primera.value = "";
+        sel.replaceChildren(primera, ...lineas.map((l) => { const o = el("option", null, "Línea " + l); o.value = l; return o; }));
+      } catch (e) {
+        const o = el("option", null, "No se pudieron cargar las líneas"); o.value = "";
+        sel.replaceChildren(o);
+      }
+    }
+
+    async function entrar(ev) {
+      ev.preventDefault();
+      const u = limpiarUsuario($("in-usuario").value), p = $("in-pass").value;
+      if (!USUARIO_RE.test(u) || !p) { msgLogin("Escribe tu usuario y contraseña."); return; }
+      $("btn-entrar").disabled = true;
+      msgLogin("");
+      try {
+        await signInWithEmailAndPassword(auth, correoDe(u), p);
+        $("in-pass").value = "";
+      } catch (e) {
+        msgLogin(mensajeAuth(e));
+      } finally {
+        $("btn-entrar").disabled = false;
+      }
+    }
+
+    async function darDeAlta(ev) {
+      ev.preventDefault();
+      const nombre = $("al-nombre").value.trim().replace(/\s+/g, " ");
+      const u = limpiarUsuario($("al-usuario").value);
+      const p = $("al-pass").value, p2 = $("al-pass2").value;
+      const linea = $("al-linea").value;
+      const codigo = $("al-codigo").value.trim();
+      if (nombre.length < 3) return msgLogin("Escribe tu nombre completo.");
+      if (!USUARIO_RE.test(u)) return msgLogin("El usuario debe tener de 3 a 30 caracteres: letras, números, punto, guion o guion bajo.");
+      if (p.length < 6) return msgLogin("La contraseña debe tener al menos 6 caracteres.");
+      if (p !== p2) return msgLogin("Las contraseñas no coinciden.");
+      if (!linea) return msgLogin("Selecciona la línea de la que eres encargado.");
+      if (!codigo) return msgLogin("Escribe el código de registro.");
+
+      $("btn-alta").disabled = true;
+      msgLogin("Creando tu cuenta…", true);
+      creandoPerfil = true;              // evita que se revise el perfil antes de guardarlo
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, correoDe(u), p);
+        try {
+          await setDoc(doc(db, "usuarios", cred.user.uid), {
+            usuario: u, nombre: nombre.toUpperCase(), lineas: [String(linea)], rol: "SUPERVISOR",
+            activo: true, creadoEn: serverTimestamp(), codigo
+          });
+        } catch (e) {
+          // Código incorrecto u otro rechazo: se borra la cuenta recién creada para no dejarla a medias.
+          try { await cred.user.delete(); } catch (_) { await signOut(auth); }
+          throw (e?.code === "permission-denied") ? Object.assign(new Error("Código de registro incorrecto."), { code: "codigo" }) : e;
+        }
+        creandoPerfil = false;
+        ["al-pass", "al-pass2", "al-codigo"].forEach((id) => { $(id).value = ""; });
+        await entrarConPerfil(cred.user);
+        toast("✅ Cuenta creada. Ya puedes capturar en la Línea " + linea + ".");
+      } catch (e) {
+        creandoPerfil = false;
+        msgLogin(e?.code === "codigo" ? e.message : mensajeAuth(e));
+      } finally {
+        $("btn-alta").disabled = false;
+      }
+    }
+
+    // ---------- Perfil y escuchas ----------
+    async function entrarConPerfil(u) {
+      try {
+        const snap = await getDoc(doc(db, "usuarios", u.uid));
+        if (!snap.exists()) {
+          mensajePendiente = "Tu usuario no tiene perfil en WorkPulse. Pide ayuda a un administrador.";
+          await signOut(auth);
+          return;
+        }
+        const d = snap.data();
+        if (d.activo !== true) {
+          mensajePendiente = "Tu cuenta está desactivada. Habla con un administrador.";
+          await signOut(auth);
+          return;
+        }
+        perfilActual = { uid: u.uid, ...d };
+        mostrarApp();
+        escucharPerfil(u.uid);
+        iniciar();
+        escucharCapturas();
+      } catch (e) {
+        mensajePendiente = mensajeAuth(e);
+        await signOut(auth);
+      }
+    }
+
+    function escucharPerfil(uid) {
+      if (cancelarPerfil) cancelarPerfil();
+      cancelarPerfil = onSnapshot(doc(db, "usuarios", uid), async (snap) => {
+        if (!snap.exists() || snap.data().activo !== true) {
+          mensajePendiente = snap.exists() ? "Tu cuenta fue desactivada." : "Tu cuenta fue eliminada.";
+          await signOut(auth);
+          return;
+        }
+        perfilActual = { uid, ...snap.data() };
+        pintarUsuarioActual();
+        if (pizarronActual) pintarPizarron();
+      }, (err) => console.warn("[Perfil]", err));
+    }
+
+    function escucharCapturas() {
+      if (cancelarCapturas) cancelarCapturas();
+      fechaCapturas = hoyISO();
+      cancelarCapturas = onSnapshot(query(collection(db, "capturas"), where("fechaId", "==", fechaCapturas)), (snap) => {
+        capturasHoy.clear();
+        snap.forEach((d) => { const c = d.data(); capturasHoy.set(String(c.linea) + "_" + c.horaIndex, c); });
+        if (pizarronActual) pintarPizarron();
+      }, (err) => console.warn("[Capturas]", err));
+    }
+
     async function iniciar() {
-      detener();
+      if (cancelar) { cancelar(); cancelar = null; }
       try {
         cancelar = await escucharDocumento(refDoc, (snap) => {
           if (!snap.exists()) {
@@ -768,128 +1123,313 @@
            [pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
            [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])]]
             .forEach(([fn, valor]) => { try { fn(valor); } catch (e) { console.error(fn.name, e); } });
-        }, async (err) => {
+        }, (err) => {
           console.error("[WorkPulse Live]", err);
-          if (err?.code === "permission-denied" && auth?.currentUser) {
-            // Las reglas no autorizan esta cuenta: se cierra la sesión y se explica por qué.
-            mensajePendiente = "La cuenta " + auth.currentUser.email + " no tiene acceso a este tablero. Entra con una cuenta autorizada.";
-            await signOut(auth);
-            return;
-          }
-          mostrarError(mensajeDeError(err));
+          mostrarError(err?.code === "permission-denied"
+            ? "Tu usuario no tiene permiso para ver el tablero. Habla con un administrador."
+            : mensajeDeError(err));
         });
       } catch (err) {
         if (!cancelar) mostrarError(mensajeDeError(err));
       }
     }
 
-    // Navegadores dentro de apps (WhatsApp, Facebook, Instagram…) no permiten bien el inicio de sesión de Google.
-    function avisoNavegador() {
-      const ua = navigator.userAgent || "";
-      return /WhatsApp|FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|LinkedInApp/i.test(ua)
-        ? "Estás en el navegador de otra app. Abre este enlace en Safari o Chrome para iniciar sesión."
-        : "";
+    // ---------- Captura de una hora ----------
+    const CAMPOS_6M = ["hombre", "maquina", "material", "metodo", "calidad", "produccion", "otros"];
+
+    function abrirCaptura(l, idx, cap) {
+      const [ini, fin] = HORAS_BOARD[idx];
+      capturaActual = { linea: String(l.linea), idx };
+      $("cap-titulo").textContent = "Línea " + l.linea + " · " + ini + " – " + fin;
+      $("cap-sub").textContent = "Meta de la hora: " + (parseInt(l.metas?.[idx], 10) || 0) + " pzs · Supervisor: " + (l.supervisor || "—");
+      const base = (cap && cap.estado === "pendiente") ? cap : { real: l.real?.[idx], ...(l.det?.[idx] || {}) };
+      const valor = (v) => (v === null || v === undefined || v === "") ? "" : String(v);
+      $("cap-real").value = valor(base.real);
+      CAMPOS_6M.forEach((c) => { $("cap-" + c).value = num(base[c]) > 0 ? String(num(base[c])) : ""; });
+      $("cap-falla").value = valor(base.falla);
+      $("cap-comentario").value = valor(base.comentario);
+      $("cap-msg").textContent = "";
+      $("cap-guardar").disabled = false;
+      $("modal-captura").hidden = false;
+      $("cap-real").focus();
     }
 
-    // Botón oficial "Iniciar sesión con Google" (Google Identity Services). Obtiene el token directamente
-    // de Google y se lo pasa a Firebase, sin depender de la página intermedia de firebaseapp.com.
-    function cargarBotonGoogle() {
-      return new Promise((resolve, reject) => {
-        if (window.google?.accounts?.id) return resolve();
-        const sc = document.createElement("script");
-        sc.src = "https://accounts.google.com/gsi/client";
-        sc.async = true;
-        sc.onload = () => resolve();
-        sc.onerror = () => reject(new Error("No se pudo cargar el botón de Google"));
-        document.head.appendChild(sc);
-      });
+    function cerrarCaptura() { $("modal-captura").hidden = true; capturaActual = null; }
+
+    async function guardarCaptura(ev) {
+      ev.preventDefault();
+      if (!capturaActual || !perfilActual) return;
+      const entero = (id, max, etiqueta, obligatorio = false) => {
+        const t = $(id).value.trim();
+        if (t === "") { if (obligatorio) throw new Error("Escribe " + etiqueta + "."); return 0; }
+        const n = Number(t);
+        if (!Number.isInteger(n) || n < 0 || n > max) throw new Error(etiqueta + " debe ser un número entero entre 0 y " + max + ".");
+        return n;
+      };
+      let datos;
+      try {
+        datos = {
+          uid: auth.currentUser.uid,
+          usuario: perfilActual.usuario,
+          linea: capturaActual.linea,
+          fechaId: hoyISO(),
+          fecha: fechaHoyCliente(),
+          horaIndex: capturaActual.idx,
+          real: entero("cap-real", 100000, "la producción real", true),
+          estado: "pendiente",
+          falla: $("cap-falla").value.trim().toUpperCase().slice(0, 200),
+          comentario: $("cap-comentario").value.trim().toUpperCase().slice(0, 200),
+          actualizadoEn: serverTimestamp()
+        };
+        CAMPOS_6M.forEach((c) => { datos[c] = entero("cap-" + c, 600, "Los minutos de " + c); });
+      } catch (e) {
+        $("cap-msg").textContent = e.message;
+        return;
+      }
+      const id = datos.fechaId + "_L" + datos.linea + "_H" + datos.horaIndex;
+      $("cap-guardar").disabled = true;
+      $("cap-msg").textContent = "";
+      try {
+        await setDoc(doc(db, "capturas", id), datos);
+        cerrarCaptura();
+        toast("✅ Guardado. Se pasa a la hoja en aprox. 1 minuto.");
+      } catch (e) {
+        $("cap-msg").textContent = e?.code === "permission-denied"
+          ? "No tienes permiso para capturar en la Línea " + datos.linea + "."
+          : mensajeAuth(e);
+        $("cap-guardar").disabled = false;
+      }
     }
 
-    async function prepararBotonGoogle() {
-      await cargarBotonGoogle();
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        ux_mode: "popup",
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        callback: async (resp) => {
-          $("login-msg").textContent = "";
-          try {
-            await signInWithCredential(auth, GoogleAuthProvider.credential(resp.credential));
-          } catch (err) {
-            console.error("[Login GIS]", err);
-            $("login-msg").textContent = mensajeDeLogin(err);
-          }
+    // ---------- Panel de administración ----------
+    function abrirAdmin() {
+      if (perfilActual?.rol !== "ADMIN") return;
+      $("panel-admin").hidden = false;
+      $("panel-admin").scrollIntoView({ behavior: "smooth", block: "start" });
+      escucharUsuarios();
+      cargarCodigo();
+    }
+
+    function cerrarAdmin() {
+      $("panel-admin").hidden = true;
+      if (cancelarUsuarios) { cancelarUsuarios(); cancelarUsuarios = null; }
+    }
+
+    function escucharUsuarios() {
+      if (cancelarUsuarios) return;
+      cancelarUsuarios = onSnapshot(collection(db, "usuarios"),
+        (snap) => pintarUsuarios(snap.docs.map((d) => ({ uid: d.id, ...d.data() }))),
+        (err) => vacio($("lista-usuarios"), mensajeAuth(err)));
+    }
+
+    function pintarUsuarios(lista) {
+      const cont = $("lista-usuarios");
+      if (!lista.length) { vacio(cont, "No hay usuarios."); return; }
+      lista.sort((a, b) => String(a.usuario).localeCompare(String(b.usuario)));
+      const t = el("table", "usuarios");
+      const trh = el("tr");
+      ["Usuario", "Nombre", "Líneas", "Rol", "Estado", "Acciones"].forEach((x) => trh.appendChild(el("th", null, x)));
+      const thead = el("thead"); thead.appendChild(trh);
+      const tbody = el("tbody");
+      lista.forEach((u) => {
+        const soyYo = u.uid === perfilActual?.uid;
+        const tr = el("tr");
+        tr.append(el("td", "fuerte", u.usuario + (soyYo ? " (tú)" : "")), el("td", "izq", u.nombre || ""),
+                  el("td", null, (u.lineas || []).join(", ") || "—"));
+        const tdRol = el("td"); tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : "sup"), u.rol)); tr.appendChild(tdRol);
+        const tdEst = el("td"); tdEst.appendChild(el("span", "chip " + (u.activo ? "sup" : "off"), u.activo ? "ACTIVO" : "DESACTIVADO")); tr.appendChild(tdEst);
+        const acc = el("td"); const caja = el("div", "acciones");
+        const boton = (txt, fn, clase) => { const b = el("button", clase || null, txt); b.type = "button"; b.addEventListener("click", fn); caja.appendChild(b); };
+        boton("Líneas", () => editarLineas(u));
+        boton("Contraseña", () => cambiarPassword(u));
+        if (!soyYo) {
+          boton(u.rol === "ADMIN" ? "Hacer supervisor" : "Hacer admin", () => cambiarRol(u));
+          boton(u.activo ? "Desactivar" : "Activar", () => cambiarActivo(u));
+          boton("Eliminar", () => eliminarUsuario(u), "peligro");
         }
+        acc.appendChild(caja); tr.appendChild(acc);
+        tbody.appendChild(tr);
       });
-      const ancho = Math.min(320, Math.max(220, $("gsi-btn").parentElement.clientWidth - 48));
-      google.accounts.id.renderButton($("gsi-btn"), {
-        type: "standard", theme: "outline", size: "large", text: "signin_with",
-        shape: "rectangular", logo_alignment: "left", locale: "es", width: ancho
-      });
-      $("btn-login").hidden = true;
-      $("gsi-btn").hidden = false;
+      t.append(thead, tbody);
+      cont.replaceChildren(t);
     }
 
+    async function actualizarPerfil(u, cambios, okTxt) {
+      try {
+        await updateDoc(doc(db, "usuarios", u.uid), cambios);
+        toast("✅ " + okTxt);
+      } catch (e) {
+        alert("No se pudo actualizar: " + mensajeAuth(e));
+      }
+    }
+
+    function editarLineas(u) {
+      const txt = prompt("Líneas de " + u.usuario + " (separadas por coma).\nUn ADMIN puede dejarlo vacío:", (u.lineas || []).join(", "));
+      if (txt === null) return;
+      const lineas = lineasDeTexto(txt);
+      if (u.rol !== "ADMIN" && !lineas.length) { alert("Un supervisor necesita al menos una línea."); return; }
+      actualizarPerfil(u, { lineas }, "Líneas de " + u.usuario + ": " + (lineas.join(", ") || "ninguna"));
+    }
+
+    function cambiarRol(u) {
+      const nuevo = u.rol === "ADMIN" ? "SUPERVISOR" : "ADMIN";
+      if (nuevo === "SUPERVISOR" && !(u.lineas || []).length) { alert("Primero asígnale al menos una línea con el botón \"Líneas\"."); return; }
+      if (!confirm("¿Cambiar a " + u.usuario + " a " + nuevo + "?")) return;
+      actualizarPerfil(u, { rol: nuevo }, u.usuario + " ahora es " + nuevo);
+    }
+
+    function cambiarActivo(u) {
+      if (!confirm((u.activo ? "¿Desactivar" : "¿Activar") + " a " + u.usuario + "?")) return;
+      actualizarPerfil(u, { activo: !u.activo }, u.usuario + (u.activo ? " desactivado" : " activado"));
+    }
+
+    async function cambiarPassword(u) {
+      const nueva = prompt("Nueva contraseña para " + u.usuario + " (mínimo 6 caracteres):");
+      if (nueva === null) return;
+      if (nueva.length < 6) { alert("La contraseña debe tener al menos 6 caracteres."); return; }
+      try {
+        await addDoc(collection(db, "solicitudes"), {
+          tipo: "password", uid: u.uid, usuario: u.usuario, nueva,
+          creadoPor: perfilActual.usuario, creadoEn: serverTimestamp()
+        });
+        toast("✅ Listo. La contraseña de " + u.usuario + " cambia en aprox. 1 minuto.", 5000);
+      } catch (e) {
+        alert("No se pudo solicitar el cambio: " + mensajeAuth(e));
+      }
+    }
+
+    async function eliminarUsuario(u) {
+      if (!confirm("¿Eliminar a " + u.usuario + "? Ya no podrá entrar y su usuario quedará libre.")) return;
+      try {
+        await deleteDoc(doc(db, "usuarios", u.uid));           // sin perfil ya no puede ver ni capturar
+        await addDoc(collection(db, "solicitudes"), {          // Apps Script borra también la cuenta
+          tipo: "eliminar", uid: u.uid, usuario: u.usuario,
+          creadoPor: perfilActual.usuario, creadoEn: serverTimestamp()
+        });
+        toast("✅ " + u.usuario + " eliminado.");
+      } catch (e) {
+        alert("No se pudo eliminar: " + mensajeAuth(e));
+      }
+    }
+
+    async function crearUsuario(ev) {
+      ev.preventDefault();
+      const msg = $("cr-msg");
+      const nombre = $("cr-nombre").value.trim().replace(/\s+/g, " ");
+      const u = limpiarUsuario($("cr-usuario").value);
+      const p = $("cr-pass").value;
+      const rol = $("cr-rol").value;
+      const lineas = lineasDeTexto($("cr-lineas").value);
+      msg.classList.remove("ok-msg");
+      if (nombre.length < 3) { msg.textContent = "Escribe el nombre completo."; return; }
+      if (!USUARIO_RE.test(u)) { msg.textContent = "Usuario inválido: 3 a 30 caracteres (letras, números, . _ -)."; return; }
+      if (p.length < 6) { msg.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+      if (rol === "SUPERVISOR" && !lineas.length) { msg.textContent = "Un supervisor necesita al menos una línea."; return; }
+
+      $("btn-crear").disabled = true;
+      msg.textContent = "Creando…";
+      // Se usa una segunda instancia de Firebase para crear la cuenta sin cerrar la sesión del admin.
+      const secundaria = initializeApp(firebaseConfig, "alta-" + Date.now());
+      const authSec = getAuth(secundaria);
+      try {
+        const cred = await createUserWithEmailAndPassword(authSec, correoDe(u), p);
+        try {
+          await setDoc(doc(db, "usuarios", cred.user.uid), {
+            usuario: u, nombre: nombre.toUpperCase(), lineas, rol, activo: true,
+            creadoEn: serverTimestamp(), creadoPor: perfilActual.usuario
+          });
+        } catch (e) {
+          try { await cred.user.delete(); } catch (_) { /* queda para borrar a mano */ }
+          throw e;
+        }
+        await signOut(authSec);
+        ["cr-nombre", "cr-usuario", "cr-pass", "cr-lineas"].forEach((id) => { $(id).value = ""; });
+        msg.textContent = "✅ Usuario " + u + " creado.";
+        msg.classList.add("ok-msg");
+      } catch (e) {
+        msg.textContent = mensajeAuth(e);
+      } finally {
+        $("btn-crear").disabled = false;
+        deleteApp(secundaria).catch(() => {});
+      }
+    }
+
+    async function cargarCodigo() {
+      try {
+        const snap = await getDoc(doc(db, "config", "registro"));
+        $("cod-valor").value = snap.exists() ? (snap.data().codigo || "") : "";
+      } catch (e) {
+        $("cod-msg").textContent = mensajeAuth(e);
+      }
+    }
+
+    async function guardarCodigo(ev) {
+      ev.preventDefault();
+      const msg = $("cod-msg");
+      const codigo = $("cod-valor").value.trim();
+      msg.classList.remove("ok-msg");
+      if (codigo.length < 4) { msg.textContent = "Mínimo 4 caracteres."; return; }
+      try {
+        await setDoc(doc(db, "config", "registro"), { codigo, actualizadoEn: serverTimestamp() });
+        msg.textContent = "✅ Código guardado.";
+        msg.classList.add("ok-msg");
+      } catch (e) {
+        msg.textContent = mensajeAuth(e);
+      }
+    }
+
+    // ---------- Arranque ----------
     function arrancar() {
       if (firebaseConfig.projectId.startsWith("TU_")) {
         $("login").hidden = true; $("contenido").hidden = false;
         mostrarError("Falta configurar firebaseConfig en index.html.");
         return;
       }
-      const app = initializeApp(firebaseConfig);
+      app = initializeApp(firebaseConfig);
       auth = getAuth(app);
-      refDoc = doc(getFirestore(app), "resumen_ejecutivo", "ultimo_calculo");
+      db = getFirestore(app);
+      refDoc = doc(db, "resumen_ejecutivo", "ultimo_calculo");
 
-      const proveedor = new GoogleAuthProvider();
-      // Siempre muestra el selector de cuentas (útil si el navegador tiene varias sesiones de Google).
-      proveedor.setCustomParameters({ prompt: "select_account" });
-
-      $("btn-login").addEventListener("click", async () => {
-        $("btn-login").disabled = true;
-        $("login-msg").textContent = "";
-        try {
-          await signInWithPopup(auth, proveedor);
-        } catch (err) {
-          console.error("[Login]", err);
-          $("login-msg").textContent = mensajeDeLogin(err);
-          $("btn-login").disabled = false;
-        }
-      });
-
-      if (GOOGLE_CLIENT_ID) {
-        prepararBotonGoogle().catch((err) => {
-          console.error("[GIS]", err);   // si falla, se queda el botón de ventana emergente
-        });
-      }
+      $("form-entrar").addEventListener("submit", entrar);
+      $("form-alta").addEventListener("submit", darDeAlta);
+      $("ir-alta").addEventListener("click", verAlta);
+      $("ir-entrar").addEventListener("click", verEntrar);
+      $("form-captura").addEventListener("submit", guardarCaptura);
+      $("cap-cancelar").addEventListener("click", cerrarCaptura);
+      $("modal-captura").addEventListener("click", (e) => { if (e.target === $("modal-captura")) cerrarCaptura(); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("modal-captura").hidden) cerrarCaptura(); });
+      $("btn-admin").addEventListener("click", abrirAdmin);
+      $("cerrar-admin").addEventListener("click", cerrarAdmin);
+      $("form-crear").addEventListener("submit", crearUsuario);
+      $("form-codigo").addEventListener("submit", guardarCodigo);
 
       $("btn-salir").addEventListener("click", async () => {
-        detener();
-        try { window.google?.accounts?.id?.disableAutoSelect(); } catch { /* sin GIS */ }
+        detenerEscuchas();
         await signOut(auth);
         location.reload();   // limpia de la memoria los datos que se mostraron
       });
 
-      // La sesión se recuerda en este navegador (útil para una TV en piso).
+      // La sesión se recuerda en este navegador (útil para una PC o TV en piso).
       onAuthStateChanged(auth, async (u) => {
-        detener();
+        if (creandoPerfil) return;          // darDeAlta() se encarga
+        detenerEscuchas();
         if (!u) {
+          perfilActual = null;
           mostrarLogin(mensajePendiente);
           mensajePendiente = "";
           return;
         }
-        if (!correoValido(u)) {
-          mensajePendiente = "La cuenta " + (u.email || "seleccionada") + " no tiene un correo verificado.";
-          await signOut(auth);
-          return;
-        }
-        mostrarApp(u);
-        iniciar();
+        await entrarConPerfil(u);
       });
+
+      // Si la página queda abierta de un día para otro, vuelve a escuchar las capturas del día nuevo.
+      setInterval(() => { if (perfilActual && fechaCapturas !== hoyISO()) escucharCapturas(); }, 60000);
     }
 
-    window.addEventListener("pagehide", () => detener());
-    window.addEventListener("pageshow", (e) => { if (e.persisted && !cancelar && auth && correoValido(auth.currentUser)) iniciar(); });
+    window.addEventListener("pagehide", () => detenerEscuchas());
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted && auth?.currentUser && perfilActual && !cancelar) { escucharPerfil(perfilActual.uid); iniciar(); escucharCapturas(); }
+    });
     arrancar();
   </script>
 </body>
