@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WorkPulse Live</title>
+  <title>WorkPulse</title>
   <style>
     :root {
       --verde: #009B4A; --verde-osc: #007b3a; --texto: #0f172a; --gris: #64748b; --borde: #e2e8f0;
@@ -12,11 +12,66 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: var(--fondo); color: var(--texto); }
 
-    header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
-             background: #fff; border-bottom: 4px solid var(--verde); padding: 12px 20px; }
-    header h1 { margin: 0; font-size: 22px; font-weight: 900; color: var(--verde); letter-spacing: .5px; }
-    header .sub { font-size: 12px; font-weight: 700; color: var(--gris); }
-    .estado { font-size: 12px; font-weight: 800; color: var(--gris); text-align: right; }
+    /* ----- Encabezado (igual al sistema original) ----- */
+    header.wp-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+                       background: #fff; border-top: 6px solid var(--verde); border-bottom: 2px solid var(--verde);
+                       box-shadow: 0 4px 6px rgba(0,0,0,.03); padding: 12px 20px; }
+    .header-left { display: flex; align-items: center; gap: 15px; min-width: 0; }
+    .header-left img { height: 42px; width: auto; object-fit: contain; }
+    .header-title-box { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+    .header-fila { display: flex; align-items: center; gap: 10px 15px; flex-wrap: wrap; }
+    .header-fila h1 { margin: 0; font-size: 24px; font-weight: 900; color: var(--verde); letter-spacing: .5px; line-height: 1; }
+    .header-sub-text { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; font-weight: 700;
+                       color: var(--gris); flex-wrap: wrap; }
+    .header-sub-text .sep { color: #cbd5e1; }
+    .btn-neon { background: #fff; border: 1.5px solid; font: inherit; font-size: 13px; font-weight: 900; padding: 6px 16px;
+                border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+                transition: transform .3s ease, background .3s ease, color .3s ease; }
+    .btn-neon.verde { color: var(--verde); border-color: var(--verde); animation: pulsoVerde 1.8s infinite ease-in-out; }
+    .btn-neon.verde:hover { background: var(--verde); color: #fff; transform: scale(1.04); }
+    .btn-neon.rojo { color: var(--rojo); border-color: var(--rojo); animation: pulsoRojo 1.8s infinite ease-in-out; }
+    .btn-neon.rojo:hover { background: var(--rojo); color: #fff; transform: scale(1.04); }
+    .btn-alarma { background: linear-gradient(145deg, #7f1d1d, #991b1b); border: 2px solid #ef4444; color: #fff; font: inherit;
+                  font-size: 15px; font-weight: 900; padding: 7px 18px; border-radius: 12px; cursor: pointer; white-space: nowrap;
+                  animation: pulsoAlarma 2.5s infinite; transition: transform .2s ease; }
+    .btn-alarma:hover { transform: scale(1.05); }
+    .btn-tv { background: #f1f5f9; border: 1.5px solid #94a3b8; color: #334155; font: inherit; font-size: 11px; font-weight: 900;
+              padding: 6px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+    .btn-tv:hover { background: #334155; color: #fff; }
+    @keyframes pulsoVerde { 0%, 100% { box-shadow: 0 0 5px rgba(0,155,74,.4); } 50% { box-shadow: 0 0 14px rgba(0,155,74,.85); } }
+    @keyframes pulsoRojo  { 0%, 100% { box-shadow: 0 0 5px rgba(220,38,38,.4); } 50% { box-shadow: 0 0 14px rgba(220,38,38,.85); } }
+    @keyframes pulsoAlarma { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); } 70% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+                             100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+    @media (prefers-reduced-motion: reduce) { .btn-neon, .btn-alarma { animation: none; } }
+    .btn-group { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; flex-grow: 1; align-items: center; }
+    .btn-group .btn { --c: #333; --t: #000; --f: #fff; background: var(--f); color: var(--t); border: 1.5px solid var(--c);
+                      font: inherit; font-size: 9.5px; font-weight: 800; text-transform: uppercase; padding: 5px 7px; border-radius: 5px;
+                      cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.05); transition: all .2s ease; }
+    .btn-group .btn:hover { background: var(--c); color: #fff; transform: translateY(-1px); }
+    .barra-sesion { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 14px;
+                    background: #fff; border-bottom: 1px solid var(--borde); padding: 8px 20px; }
+    @media (max-width: 1400px) {
+      header.wp-header { flex-direction: column; }
+      .header-left { justify-content: center; }
+      .header-fila, .header-sub-text { justify-content: center; }
+      .btn-group { justify-content: center; width: 100%; }
+    }
+    @media (max-width: 768px) {
+      header.wp-header { padding: 14px 12px; border-top-width: 5px; }
+      .header-left { width: 100%; flex-direction: column; text-align: center; gap: 4px; }
+      .header-left img { height: 38px; }
+      .header-title-box { width: 100%; align-items: center; }
+      .header-fila { flex-direction: column; width: 100%; gap: 8px; }
+      .header-fila h1 { font-size: 28px; margin-bottom: 4px; }
+      .btn-neon, .btn-alarma, .btn-tv { width: 100%; white-space: normal; font-size: 11px; padding: 12px 10px; border-radius: 10px;
+                                        line-height: 1.3; min-height: 44px; }
+      .btn-alarma { font-size: 15px; }
+      .header-sub-text { font-size: 10px; margin-top: 10px; }
+      .btn-group { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding-top: 12px; border-top: 1.5px solid var(--borde); }
+      .btn-group .btn { width: 100%; font-size: 10px; padding: 9px 4px; white-space: normal; min-height: 42px; line-height: 1.2; }
+      .barra-sesion { padding: 8px 12px; }
+    }
+    .estado { font-size: 12px; font-weight: 800; color: var(--gris); }
     .estado.alerta { color: #b45309; }
     .estado.error { color: var(--rojo); }
     .btn-captura-old { display: inline-block; background: var(--verde); color: #fff; text-decoration: none; font-weight: 900;
@@ -38,7 +93,9 @@
     .podio-card.p1 { background: #fffbeb; border-color: #f59e0b; padding: 22px 12px; }
     .podio-card.p2 { background: #f1f5f9; border-color: #94a3b8; }
     .podio-card.p3 { background: #fff7ed; border-color: var(--ambar); }
-    .medalla { font-size: 32px; line-height: 1; }
+    .medalla { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%;
+               font-size: 17px; font-weight: 900; color: #fff; background: #94a3b8; }
+    .podio-card.p1 .medalla { background: #f59e0b; } .podio-card.p3 .medalla { background: var(--ambar); }
     .nombre { font-weight: 900; font-size: 15px; margin-top: 6px; word-break: break-word; }
     .lineas-sup { font-size: 11px; font-weight: 700; color: var(--gris); margin-top: 4px; }
     .perf { font-size: 28px; font-weight: 900; margin-top: 6px; }
@@ -88,7 +145,7 @@
     .cambio { text-align: center; font-size: 13px; font-weight: 700; color: var(--gris); }
     .login-msg { color: var(--rojo); font-weight: 800; font-size: 13px; min-height: 1em; margin: 0; text-align: center; }
     .ok-msg { color: var(--verde); }
-    .usuario-box { font-size: 12px; font-weight: 800; color: var(--texto); margin-top: 6px; display: flex; flex-wrap: wrap;
+    .usuario-box { font-size: 12px; font-weight: 800; color: var(--texto); display: flex; flex-wrap: wrap;
                    gap: 6px 10px; justify-content: flex-end; align-items: center; }
     .usuario-box .rol { font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #334155; }
     .usuario-box .rol.admin { background: #fef3c7; color: #92400e; }
@@ -99,7 +156,10 @@
     /* ----- Captura en el pizarrón ----- */
     table.board td.editable { cursor: pointer; outline: 2px dashed rgba(0,155,74,.55); outline-offset: -4px; }
     table.board td.editable:hover { filter: brightness(.95); }
-    table.board td .marca { font-size: .55em; margin-left: 3px; vertical-align: super; }
+    table.board td .marca { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-left: 5px;
+                            vertical-align: super; box-shadow: 0 0 0 2px #fff; }
+    table.board td .marca.pend { background: #f59e0b; }
+    table.board td .marca.rech { background: #dc2626; }
     table.board th.mia { background: #dcfce7; }
     .ayuda-captura { font-size: 12px; font-weight: 800; color: #166534; background: #f0fdf4; border: 1px solid #86efac;
                      border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
@@ -149,7 +209,7 @@
     table.board td.hora { font-size: clamp(13px, 1.2vw, 20px); color: #3f3f46; }
     table.board td.meta { background: #f4f4f5; }
     table.board td.nd { color: #a1a1aa; }
-    table.board td.bloq { background: #f1f5f9; opacity: .6; }
+    table.board td.bloq { background: repeating-linear-gradient(45deg, #f1f5f9 0 6px, #e2e8f0 6px 12px); }
     table.board tr.tot td { background: #e4e4e7; border-top: 3.5px solid #000; }
     /* ----- Centro de Comando (8 gráficas) ----- */
     .cc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
@@ -190,26 +250,66 @@
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>WORKPULSE LIVE</h1>
-      <div class="sub">Resumen y captura de producción en tiempo real</div>
-    </div>
-    <div class="estado" id="estado">
-      <div id="estado-texto">Conectando…</div>
-      <div class="usuario-box" id="usuario-box" hidden>
-        <span id="usuario"></span>
-        <button type="button" class="btn-admin" id="btn-admin" hidden>⚙️ Administración</button>
-        <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
+  <header class="wp-header">
+    <div class="header-left">
+      <img src="https://www.nidec.com/files/user/www-nidec-com/corporate/about/slogan/img/img_slogan_01.png" alt="Nidec - All for dreams">
+      <div class="header-title-box">
+        <div class="header-fila">
+          <h1>WORKPULSE</h1>
+          <button type="button" class="btn-neon verde" data-abrir="PRODUCCION">Real Time Production Data</button>
+          <button type="button" class="btn-neon verde" data-ir="sec-board">Motor Production Board</button>
+          <button type="button" class="btn-neon rojo" data-abrir="EHS">Sistema de Gestión de Primeros Auxilios – EHS</button>
+          <button type="button" class="btn-alarma" data-abrir="ALARMA">PRIMEROS AUXILIOS</button>
+          <button type="button" class="btn-tv" data-abrir="TV" title="Modo espejo TV Andon">MODO TV</button>
+        </div>
+        <div class="header-sub-text">
+          <span>AI Manufacturing Management System Powered</span>
+          <span class="sep">|</span>
+          <span id="reloj">&nbsp;</span>
+          <span class="sep">|</span>
+          <span>Nidec ACIM Reynosa</span>
+        </div>
       </div>
     </div>
+    <div class="btn-group">
+        <button type="button" class="btn" data-abrir="SEKAIA" style="--c:#8b5cf6; --t:#8b5cf6; --f:#f5f3ff;">SekaIA</button>
+        <button type="button" class="btn" data-abrir="T10FUGAS" style="--c:#d97706; --t:#d97706; --f:#fffbeb;">T10 Fugas</button>
+        <button type="button" class="btn" data-abrir="TMTTO" style="--c:#2563eb; --t:#2563eb; --f:#eff6ff;">T/MTTO</button>
+        <button type="button" class="btn" data-abrir="KPI" style="--c:#009B4A;">KPI</button>
+        <button type="button" class="btn" data-abrir="HISTORIAL" style="--c:#84cc16;">Historial</button>
+        <button type="button" class="btn" data-abrir="MRO" style="--c:#f59e0b;">Progreso MRO</button>
+        <button type="button" class="btn" data-abrir="OMRO" style="--c:#3b82f6;">O/MRO</button>
+        <button type="button" class="btn" data-abrir="CMTTO" style="--c:#009B4A;">C/MTTO</button>
+        <button type="button" class="btn" data-abrir="VALEHS" style="--c:#dc2626;">VAL/EHS</button>
+        <button type="button" class="btn" data-abrir="RESULTS" style="--c:#8b5cf6;">Results</button>
+        <button type="button" class="btn" data-abrir="DATA" style="--c:#64748b;">Data</button>
+        <button type="button" class="btn" data-abrir="ADMIN" style="--c:#333333;">Admin</button>
+        <button type="button" class="btn" data-abrir="PERMISOS" style="--c:#0284c7; --t:#0284c7; --f:#f0f9ff;">Permisos</button>
+        <button type="button" class="btn" data-abrir="OPEHS" style="--c:#009B4A; --t:#009B4A; --f:#f0fdf4;">O/P-EHS</button>
+        <button type="button" class="btn" data-abrir="PERSONAL" style="--c:#2563eb; --t:#2563eb; --f:#eff6ff;">Personal</button>
+        <button type="button" class="btn" data-abrir="PEMPLEADO" style="--c:#f59e0b; --t:#d97706; --f:#fffbeb;">P-Empleado Fugas</button>
+        <button type="button" class="btn" data-abrir="EQUIPOS" style="--c:#0284c7; --t:#0284c7; --f:#f0f9ff;">Equipos</button>
+        <button type="button" class="btn" data-abrir="RESREF" style="--c:#0284c7; --t:#0284c7; --f:#f0f9ff;">Resumen Refacciones</button>
+        <button type="button" class="btn" data-abrir="RESPROD" style="--c:#009B4A; --t:#009B4A; --f:#f0fdf4;">Resumen Producción</button>
+        <button type="button" class="btn" data-abrir="PASE" style="--c:#009B4A; --t:#009B4A; --f:#f0fdf4;">Pase Ent / Salida</button>
+        <button type="button" class="btn" data-abrir="FUGAS" style="--c:#333333;">Fugas</button>
+    </div>
   </header>
+
+  <div class="barra-sesion">
+    <div class="estado" id="estado"><span id="estado-texto">Conectando…</span></div>
+    <div class="usuario-box" id="usuario-box" hidden>
+      <span id="usuario"></span>
+      <button type="button" class="btn-admin" id="btn-admin" hidden>Administración</button>
+      <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
+    </div>
+  </div>
 
   <!-- Pantalla de acceso: usuario y contraseña, o darse de alta -->
   <div class="login" id="login">
     <div class="login-card">
-      <h1>WORKPULSE LIVE</h1>
-      <p class="lema">Tablero de producción en tiempo real</p>
+      <h1>WORKPULSE</h1>
+      <p class="lema">AI Manufacturing Management System · Nidec ACIM Reynosa</p>
 
       <form class="form" id="form-entrar" autocomplete="on" novalidate>
         <label class="campo">Usuario
@@ -258,7 +358,7 @@
 
     <section class="panel" id="panel-admin" hidden>
       <div class="admin-head">
-        <h2>⚙️ Administración de usuarios</h2>
+        <h2>Administración de usuarios</h2>
         <button type="button" class="btn-sec" id="cerrar-admin">Cerrar panel</button>
       </div>
       <div class="admin-grid">
@@ -294,7 +394,7 @@
       </div>
     </section>
 
-    <h2>🏭 Motor Production Board</h2>
+    <h2 id="sec-board">Motor Production Board</h2>
     <section class="panel">
       <div class="board-filtros">
         <label>ÁREA: <select id="sel-area"></select></label>
@@ -304,7 +404,7 @@
       <div class="tabla-wrap" id="board"><div class="vacio">Cargando…</div></div>
     </section>
 
-    <h2>📊 Centro de comando</h2>
+    <h2 id="sec-centro">Centro de comando</h2>
     <section class="cc-grid">
       <div class="cc-card"><div class="cc-tit" id="cc-tit-dia">1. Producción por hora</div><div class="cc-chart" id="cc-dia"></div></div>
       <div class="cc-card"><div class="cc-tit">2. Producción por día</div><div class="cc-chart" id="cc-sem"></div></div>
@@ -324,16 +424,16 @@
     <h2>Indicadores del turno</h2>
     <section class="kpis" id="kpis"><div class="vacio">Cargando…</div></section>
 
-    <h2>🏆 Podio de supervisores · Performance global</h2>
+    <h2>Podio de supervisores · Performance global</h2>
     <section class="panel" id="podio"><div class="vacio">Cargando…</div></section>
 
     <div class="dos-col">
       <div>
-        <h2>📋 Desglose por línea</h2>
+        <h2>Desglose por línea</h2>
         <section class="panel tabla-wrap" id="lineas"><div class="vacio">Cargando…</div></section>
       </div>
       <div>
-        <h2>🚨 Top causas / fallas</h2>
+        <h2>Top causas / fallas</h2>
         <section class="panel" id="fallas"><div class="vacio">Cargando…</div></section>
       </div>
     </div>
@@ -391,6 +491,26 @@
     // Los usuarios se guardan en Firebase Authentication como <usuario>@usuarios.workpulse.app
     const DOMINIO_USUARIOS = "@usuarios.workpulse.app";
     const MINUTOS_DATO_VIEJO = 15;
+
+    // Sistema completo en Apps Script (cuenta @nidec-ga.com). ?abrir=CLAVE abre ese módulo directo.
+    const URL_SISTEMA = "https://script.google.com/a/macros/nidec-ga.com/s/AKfycbyEASK4qasxRuua-jiq6DcHim_Kw4SOoptsTY-rtrGeooCQIsPAKVqSSV0aMZ2GfBEP/exec";
+
+    // Reloj del encabezado: "jueves, 22 de octubre de 2026, 07:24 a.m."
+    function pintarReloj() {
+      const r = document.getElementById("reloj");
+      if (r) r.textContent = new Date().toLocaleDateString("es-MX",
+        { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+    pintarReloj();
+    setInterval(pintarReloj, 1000);
+
+    document.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => {
+      window.open(URL_SISTEMA + "?abrir=" + encodeURIComponent(b.dataset.abrir), "_blank", "noopener");
+    }));
+    document.querySelectorAll("[data-ir]").forEach((b) => b.addEventListener("click", () => {
+      const destino = document.getElementById(b.dataset.ir);
+      if (destino && destino.offsetParent !== null) destino.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
     // =============================================================
 
 
@@ -459,7 +579,7 @@
 
       if (!ranking.length) { vacio(cont, "Aún no hay supervisores con registros hoy."); return; }
 
-      const medallas = { 1: "🥇", 2: "🥈", 3: "🥉" };
+      const medallas = { 1: "1°", 2: "2°", 3: "3°" };
       const podio = el("div", "podio");
       [2, 1, 3].forEach((puesto) => {
         const s = ranking[puesto - 1];
@@ -540,7 +660,7 @@
     function pintarFallas(lista) {
       const cont = $("fallas");
       const fallas = Array.isArray(lista) ? lista.filter((f) => f && f.causa) : [];
-      if (!fallas.length) { vacio(cont, "No hay fallas críticas registradas. ✅"); return; }
+      if (!fallas.length) { vacio(cont, "No hay fallas críticas registradas."); return; }
       cont.replaceChildren(...fallas.map((f, i) => {
         const fila = el("div", "falla");
         const izq = el("div");
@@ -622,7 +742,7 @@
       const caja = $("board-fecha");
       caja.replaceChildren(document.createTextNode("FECHA: "), el("b", null, p.fecha || "—"));
       caja.classList.toggle("viejo", !esHoy);
-      if (!esHoy) caja.appendChild(document.createTextNode(" · ⚠️ no es el día de hoy"));
+      if (!esHoy) caja.appendChild(document.createTextNode(" · no es el día de hoy"));
 
       const ahora = new Date();
       const horaActual = ahora.getHours() * 100 + ahora.getMinutes();
@@ -636,8 +756,8 @@
       trh.append(thHora, el("th", null, "META"));
       lineas.forEach((l) => {
         const mia = esHoy && puedeEditarLinea(l.linea);
-        const th = el("th", mia ? "mia" : null, (mia ? "✏️ " : "") + "LÍNEA " + l.linea);
-        th.appendChild(el("span", "sup", "👤 " + (l.supervisor || "SIN ASIGNAR")));
+        const th = el("th", mia ? "mia" : null, "LÍNEA " + l.linea);
+        th.appendChild(el("span", "sup", l.supervisor || "SIN ASIGNAR"));
         trh.appendChild(th);
       });
       ["SUMATORIA", "PERFORMANCE", "DELTA", "PALLETS"].forEach((x) => trh.appendChild(el("th", null, x)));
@@ -660,8 +780,8 @@
           // Capturas hechas desde esta página que todavía no llegan a la hoja (o que fueron rechazadas)
           const cap = esHoy ? capturasHoy.get(String(l.linea) + "_" + idx) : null;
           let marca = "", aviso = "";
-          if (cap && cap.estado === "pendiente") { v = cap.real; marca = "⏳"; aviso = "Guardado, pasando a la hoja…"; }
-          else if (cap && cap.estado === "rechazado") { marca = "⚠️"; aviso = "Captura rechazada: " + (cap.motivo || ""); }
+          if (cap && cap.estado === "pendiente") { v = cap.real; marca = "pend"; aviso = "Guardado, pasando a la hoja…"; }
+          else if (cap && cap.estado === "rechazado") { marca = "rech"; aviso = "Captura rechazada: " + (cap.motivo || ""); }
 
           let td;
           if (v !== null && v !== undefined && v !== "") {
@@ -670,9 +790,9 @@
             pintarAndon(td, andon(val, parseInt(l.metas?.[idx], 10) || 300));
             suma += val; totLinea[i] += val; capturada = true;
           } else {
-            td = el("td", futura ? "nd bloq" : "nd", futura ? "🔒" : "-");
+            td = el("td", futura ? "nd bloq" : "nd", futura ? "" : "-");
           }
-          if (marca) { td.appendChild(el("span", "marca", marca)); td.title = aviso; }
+          if (marca) { td.appendChild(el("span", "marca " + marca)); td.title = aviso; }
           if (esHoy && !futura && puedeEditarLinea(l.linea)) {
             td.classList.add("editable");
             if (!td.title) td.title = "Toca para capturar";
@@ -689,7 +809,7 @@
           [suma, (metaHora > 0 ? Math.round(suma / metaHora * 100) : 0) + "%", (delta > 0 ? "+" : "") + delta, (suma / 198).toFixed(1)]
             .forEach((x) => { const td = el("td", null, x); pintarAndon(td, est); tr.appendChild(td); });
         } else {
-          ["-", "-", "-", futura ? "🔒" : "-"].forEach((x, i) => tr.appendChild(el("td", (i === 3 && futura) ? "nd bloq" : "nd", x)));
+          ["-", "-", "-", futura ? "" : "-"].forEach((x, i) => tr.appendChild(el("td", (i === 3 && futura) ? "nd bloq" : "nd", x)));
         }
         tbody.appendChild(tr);
       });
@@ -711,8 +831,8 @@
       const piezas = [];
       if (perfilActual && esHoy) {
         const txt = perfilActual.rol === "ADMIN"
-          ? "✏️ Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar."
-          : "✏️ Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
+          ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar."
+          : "Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
         piezas.push(el("div", "ayuda-captura", txt));
       }
       piezas.push(lineas.length ? t : el("div", "vacio", "No hay líneas con supervisor configuradas para " + area + " · " + turno + "."));
@@ -794,14 +914,14 @@
 
       if (d.fechaTitulo) $("cc-tit-dia").textContent = "1. Producción " + d.fechaTitulo;
 
-      // 1. Por hora, con la misma marca ✅ / ⚠️ / ❌ de la app
+      // 1. Por hora: la etiqueta de cada hora se pinta verde (>=95%), ámbar (>=90%) o roja
       const real24 = serie(d.dia?.real, 24), meta24 = serie(d.dia?.meta, 24);
-      const etiquetas = HORAS_24.map((h, i) => {
-        if (meta24[i] <= 0 && real24[i] <= 0) return h;
+      const coloresHora = HORAS_24.map((h, i) => {
+        if (meta24[i] <= 0 && real24[i] <= 0) return "#0f172a";
         const p = meta24[i] > 0 ? real24[i] / meta24[i] * 100 : 0;
-        return h + (p >= 95 ? " ✅" : p >= 90 ? " ⚠️" : " ❌");
+        return p >= 95 ? "#009B4A" : p >= 90 ? "#d97706" : "#dc2626";
       });
-      graficas.dia.updateOptions({ xaxis: { categories: etiquetas } }, false, false);
+      graficas.dia.updateOptions({ xaxis: { categories: HORAS_24, labels: { style: { colors: coloresHora } } } }, false, false);
       graficas.dia.updateSeries([{ name: "Producción Real", data: real24 }, { name: "Meta", data: meta24 }], false);
 
       // 2, 3 y 4
@@ -832,12 +952,12 @@
       // 8. Fallas que afectan producción
       const crit = Array.isArray(t.criticas) ? t.criticas : [];
       const cont = $("cc-fallas");
-      if (!crit.length) { cont.replaceChildren(el("div", "cc-ok", "✅ Todas las líneas superan el 85%")); return; }
+      if (!crit.length) { cont.replaceChildren(el("div", "cc-ok", "Todas las líneas superan el 85%")); return; }
       cont.replaceChildren(...crit.map((c) => {
         const fila = el("div", "cc-falla");
         const izq = el("div");
-        const titulo = el("div", "l", "🔴 Línea " + c.linea);
-        if (num(c.dtMins) > 0) titulo.appendChild(el("small", null, "⏱️ " + num(c.dtMins) + " min"));
+        const titulo = el("div", "l", "Línea " + c.linea);
+        if (num(c.dtMins) > 0) titulo.appendChild(el("small", null, num(c.dtMins) + " min"));
         izq.append(titulo, el("div", "d", "(" + String(c.falla || "SIN FALLA REGISTRADA").toUpperCase() + ")"));
         fila.append(izq, el("div", "p", num(c.perf).toFixed(1) + "%"));
         return fila;
@@ -854,7 +974,7 @@
         ? "Actualizado: " + fecha.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })
         : "Sin fecha de actualización";
       if (fecha && (Date.now() - fecha.getTime()) / 60000 > MINUTOS_DATO_VIEJO) {
-        mensaje += " · ⚠️ más de " + MINUTOS_DATO_VIEJO + " min sin actualizar";
+        mensaje += " · más de " + MINUTOS_DATO_VIEJO + " min sin actualizar";
         caja.classList.add("alerta");
       }
       if (desdeCache) { mensaje += " · sin conexión (caché)"; caja.classList.add("alerta"); }
@@ -1048,7 +1168,7 @@
         creandoPerfil = false;
         ["al-pass", "al-pass2", "al-codigo"].forEach((id) => { $(id).value = ""; });
         await entrarConPerfil(cred.user);
-        toast("✅ Cuenta creada. Ya puedes capturar en la Línea " + linea + ".");
+        toast("Cuenta creada. Ya puedes capturar en la Línea " + linea + ".");
       } catch (e) {
         creandoPerfil = false;
         msgLogin(e?.code === "codigo" ? e.message : mensajeAuth(e));
@@ -1192,7 +1312,7 @@
       try {
         await setDoc(doc(db, "capturas", id), datos);
         cerrarCaptura();
-        toast("✅ Guardado. Se pasa a la hoja en aprox. 1 minuto.");
+        toast("Guardado. Se pasa a la hoja en aprox. 1 minuto.");
       } catch (e) {
         $("cap-msg").textContent = e?.code === "permission-denied"
           ? "No tienes permiso para capturar en la Línea " + datos.linea + "."
@@ -1257,7 +1377,7 @@
     async function actualizarPerfil(u, cambios, okTxt) {
       try {
         await updateDoc(doc(db, "usuarios", u.uid), cambios);
-        toast("✅ " + okTxt);
+        toast("" + okTxt);
       } catch (e) {
         alert("No se pudo actualizar: " + mensajeAuth(e));
       }
@@ -1292,7 +1412,7 @@
           tipo: "password", uid: u.uid, usuario: u.usuario, nueva,
           creadoPor: perfilActual.usuario, creadoEn: serverTimestamp()
         });
-        toast("✅ Listo. La contraseña de " + u.usuario + " cambia en aprox. 1 minuto.", 5000);
+        toast("Listo. La contraseña de " + u.usuario + " cambia en aprox. 1 minuto.", 5000);
       } catch (e) {
         alert("No se pudo solicitar el cambio: " + mensajeAuth(e));
       }
@@ -1306,7 +1426,7 @@
           tipo: "eliminar", uid: u.uid, usuario: u.usuario,
           creadoPor: perfilActual.usuario, creadoEn: serverTimestamp()
         });
-        toast("✅ " + u.usuario + " eliminado.");
+        toast("" + u.usuario + " eliminado.");
       } catch (e) {
         alert("No se pudo eliminar: " + mensajeAuth(e));
       }
@@ -1344,7 +1464,7 @@
         }
         await signOut(authSec);
         ["cr-nombre", "cr-usuario", "cr-pass", "cr-lineas"].forEach((id) => { $(id).value = ""; });
-        msg.textContent = "✅ Usuario " + u + " creado.";
+        msg.textContent = "Usuario " + u + " creado.";
         msg.classList.add("ok-msg");
       } catch (e) {
         msg.textContent = mensajeAuth(e);
@@ -1371,7 +1491,7 @@
       if (codigo.length < 4) { msg.textContent = "Mínimo 4 caracteres."; return; }
       try {
         await setDoc(doc(db, "config", "registro"), { codigo, actualizadoEn: serverTimestamp() });
-        msg.textContent = "✅ Código guardado.";
+        msg.textContent = "Código guardado.";
         msg.classList.add("ok-msg");
       } catch (e) {
         msg.textContent = mensajeAuth(e);
