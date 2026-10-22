@@ -1269,6 +1269,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
                          ["12:00","13:00"],["13:00","14:00"],["14:00","15:00"],["15:00","16:00"]];
     // Horario de cada turno: lo que guardó un ADMIN (config/horarios) > lo que dice el turno
     // ("D / 07:00 - 15:30 / LS" -> ... 14-15, 15:00-15:30) > 07:00 + hora.  Mismo cálculo en Apps Script.
+    const MINUTOS_ANTES = 5;        // cada hora se abre 5 minutos antes (ej. la de 14:00 a las 13:55). Igual en Apps Script.
     let horariosConfig = {};
     let horasActuales = [];
     let turnoActual = "";
@@ -1431,7 +1432,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       horasActuales.forEach((fila, pos) => {
         const { ini, fin, idx } = fila;
         const metaHora = lineas.reduce((a, l) => a + (parseInt(l.metas?.[idx], 10) || 0), 0);
-        const futura = esHoy && minutoAhora < fila.iniAbs;
+        const futura = esHoy && minutoAhora < fila.iniAbs - MINUTOS_ANTES;   // se abre 5 min antes de su hora
         const tr = el("tr");
         const tdIni = el("td", "hora", ini), tdFin = el("td", "hora", fin);
         if (esAdminHoras) {
@@ -1478,7 +1479,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           [suma, (metaHora > 0 ? Math.round(suma / metaHora * 100) : 0) + "%", (delta > 0 ? "+" : "") + delta, (suma / 198).toFixed(1)]
             .forEach((x) => { const td = el("td", null, x); pintarAndon(td, est); tr.appendChild(td); });
         } else {
-          ["-", "-", "-", futura ? "" : "-"].forEach((x, i) => tr.appendChild(el("td", (i === 3 && futura) ? "nd bloq" : "nd", x)));
+          // hora que todavía no empieza: toda la fila rayada (sumatoria, performance, delta y pallets también)
+          ["-", "-", "-", "-"].forEach((x) => tr.appendChild(el("td", futura ? "nd bloq" : "nd", futura ? "" : x)));
         }
         tbody.appendChild(tr);
       });
@@ -1508,6 +1510,12 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       cont.replaceChildren(...piezas);
     }
 
+    // Cada minuto se vuelve a pintar el pizarrón: así la hora se desbloquea justo cuando empieza
+    let ultimoMinutoPintado = -1;
+    setInterval(() => {
+      const m = new Date().getMinutes();
+      if (m !== ultimoMinutoPintado && pizarronActual && !$("contenido").hidden) { ultimoMinutoPintado = m; pintarPizarron(); }
+    }, 15000);
     $("sel-area").addEventListener("change", () => pintarPizarron());
     $("sel-turno").addEventListener("change", () => pintarPizarron());
     // Cada minuto se vuelve a pintar para que se desbloqueen las horas que ya empezaron.
