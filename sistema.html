@@ -16,6 +16,28 @@
     listo.catch(function () {});
     window.__wpPuente = { listo: listo, resolver: function (x) { resolver(x); }, rechazar: function (e) { rechazar(e); } };
 
+    // Rol del usuario de WorkPulse (reemplaza las contraseñas que estaban escritas en la página)
+    window.WP_TIENE_ROL = function (roles) {
+      var p = window.__wpPuente && window.__wpPuente.perfil;
+      return !!(p && p.activo === true && roles.indexOf(p.rol) !== -1);
+    };
+
+    // Imágenes del sistema guardadas en Drive de Nidec: se sirven desde la caché de Firebase
+    var IMG = {};
+    window.WP_IMG_IDS = ["1-E4NYWjDllNzSjFfZkBOKNWSxl4jHJ-G", "1AQqsLxknoqDrmJMhiTayJWHZnji8ZBNc", "1BDG8D9BDFfZIFMyq6YfBAWy_RfpsOv9N", "1FK63EMPcnYu8JVbBLttH_yU3HiiLevC6", "1IJMwaXo1nerUJGcDbvMXrkUP5M_Msfba", "1MHCddzpDDZ0GfINvvShj7OtTfaWwHNAn", "1NvcMFtviMOuHaVQWkdEwK0WvNY3yJ2GK", "1OOP2h2gynFErUoGWaqnJdlencAkF8MCU", "1RYchnZcqCne_FZf-4D-kREb1toKW3fK0", "1bz5MLr9HbSpDuqiyPahkAp-RJZWgsqom", "1cMkNydXVfp4EIoTxsHrw0YEe-0-MeEWY", "1k7kYH23hwkyVM-UPszA6faicOortt0uY", "1riY5ieRVzKD-dMgCJbdMFdbeRde1VjfQ"];
+    window.WP_IMG = function (id) { return IMG[id] || ("https://lh3.googleusercontent.com/d/" + id); };
+    function ponerImagen(id, url) {
+      IMG[id] = url;
+      var docs = [document];
+      document.querySelectorAll(".wp-capa iframe").forEach(function (f) { try { if (f.contentDocument) docs.push(f.contentDocument); } catch (e) {} });
+      docs.forEach(function (d) { d.querySelectorAll('img[src*="' + id + '"]').forEach(function (im) { im.src = url; }); });
+    }
+    listo.then(function (api) {
+      (window.WP_IMG_IDS || []).forEach(function (id) {
+        api.leerCache("img_" + id).then(function (v) { if (typeof v === "string" && v.indexOf("data:") === 0) ponerImagen(id, v); }, function () {});
+      });
+    });
+
     // ---- misma clave que calcula Apps Script (puenteClave_) ----
     function hex(texto) {
       var b = new TextEncoder().encode(texto), s = "";
@@ -355,6 +377,25 @@
   })();
   </script>
 
+  <style>
+    /* Ya no se piden contraseñas: Personal, Equipos y Ajuste manual se abren según el rol de WorkPulse */
+    #personal-pass-input, #equipos-pass-input, .form-group:has(#a-pass) { display: none !important; }
+  </style>
+  <script>
+    // Personal y Equipos: un ADMIN entra directo, sin escribir contraseña
+    document.addEventListener("DOMContentLoaded", function () {
+      ["Personal", "Equipos"].forEach(function (n) {
+        var abrir = window["abrirModal" + n], entrar = window["autenticar" + n];
+        if (typeof abrir !== "function" || typeof entrar !== "function") return;
+        window["abrirModal" + n] = function () {
+          var r = abrir.apply(this, arguments);
+          if (window.WP_TIENE_ROL && window.WP_TIENE_ROL(["ADMIN"])) setTimeout(entrar, 50);
+          return r;
+        };
+      });
+    });
+  </script>
+
   <!-- Encabezado acomodado: logo arriba, WORKPULSE debajo y los botones principales centrados -->
   <style>
     @media (min-width: 769px) {
@@ -428,7 +469,8 @@
             let toast = document.createElement('div');
             toast.id = 'wp-toast-msg';
             
-            let esError = mensaje.toLowerCase().includes('completa') || mensaje.toLowerCase().includes('falta') || mensaje.toLowerCase().includes('error');
+            let esError = mensaje.toLowerCase().includes('completa') || mensaje.toLowerCase().includes('falta') || mensaje.toLowerCase().includes('error') ||
+                          /solo un (admin|supervisor)|no tiene permiso|no está aprobada|puedes ver todo|no está permitida|denegad|no respondió/i.test(mensaje);
             let colorBg = esError ? '#dc2626' : '#009B4A';
             let icono = esError ? '⚠️' : '✅';
             let globalCerrados = [];
@@ -5672,8 +5714,8 @@ window.reconstruirVistaRefaccionesPestana = function(winTarget) {
         }
 
         function resetearTodoElSistema() {
-            let pass = document.getElementById('a-pass').value;
-            if(!pass) return alert("Ingresa la contraseña de Admin.");
+            if (!WP_TIENE_ROL(["ADMIN"])) return alert("Solo un ADMIN de WorkPulse puede reiniciar el sistema.");
+            let pass = "";
             if(confirm("⚠️ ¿Estás COMPLETAMENTE SEGURO de reiniciar todo el sistema a cero?")) {
                 loading("Reseteando todo el sistema...");
                 google.script.run.withSuccessHandler(res => {
@@ -6491,7 +6533,7 @@ function abrirTarjetasMttoNuevaPestana() {
                 win.document.close();
             }).getAllLogs();
         }).getTarjetasMttoModuloCompleto();
-    }).getPersonalData("1451MR");
+    }).getPersonalData("");
 }
 // =========================================================================
 // MÓDULO TOP 10 MÁQUINAS - CONSTRUCTOR VISTA PARETO 80/20 (FRONTEND)
@@ -6680,11 +6722,8 @@ function abrirModalPersonal() {
 }
 
 function autenticarPersonal() {
-  let pass = document.getElementById('personal-pass-input').value.trim();
-  if (!pass) {
-    alert("Ingresa la contraseña de Administrador.");
-    return;
-  }
+  if (!WP_TIENE_ROL(["ADMIN"])) { alert("Solo un ADMIN de WorkPulse puede administrar el personal."); return; }
+  let pass = "WP";
   loading("Validando Credenciales...");
   
   google.script.run
@@ -6978,11 +7017,8 @@ function abrirModalEquipos() {
 }
 
 function autenticarEquipos() {
-  let pass = document.getElementById('equipos-pass-input').value.trim();
-  if (!pass) {
-    alert("Ingresa la contraseña de Administrador.");
-    return;
-  }
+  if (!WP_TIENE_ROL(["ADMIN"])) { alert("Solo un ADMIN de WorkPulse puede administrar los equipos."); return; }
+  let pass = "WP";
   loading("Validando Credenciales...");
   
   google.script.run
@@ -7302,12 +7338,12 @@ function abrirModalProduccion() {
     let JS_CLOSE = "</sc" + "ript>";
 
     // URLs DE IMÁGENES HD EN GOOGLE DRIVE
-    let imgLine = "https://lh3.googleusercontent.com/d/1cMkNydXVfp4EIoTxsHrw0YEe-0-MeEWY";
-    let imgSup = "https://lh3.googleusercontent.com/d/1-E4NYWjDllNzSjFfZkBOKNWSxl4jHJ-G";
-    let imgGen = "https://lh3.googleusercontent.com/d/1OOP2h2gynFErUoGWaqnJdlencAkF8MCU";
-    let imgDash = "https://lh3.googleusercontent.com/d/1riY5ieRVzKD-dMgCJbdMFdbeRde1VjfQ";
-    let imgKpi = "https://lh3.googleusercontent.com/d/1IJMwaXo1nerUJGcDbvMXrkUP5M_Msfba";
-    let imgAdmin = "https://lh3.googleusercontent.com/d/1MHCddzpDDZ0GfINvvShj7OtTfaWwHNAn";
+    let imgLine = WP_IMG("1cMkNydXVfp4EIoTxsHrw0YEe-0-MeEWY");
+    let imgSup = WP_IMG("1-E4NYWjDllNzSjFfZkBOKNWSxl4jHJ-G");
+    let imgGen = WP_IMG("1OOP2h2gynFErUoGWaqnJdlencAkF8MCU");
+    let imgDash = WP_IMG("1riY5ieRVzKD-dMgCJbdMFdbeRde1VjfQ");
+    let imgKpi = WP_IMG("1IJMwaXo1nerUJGcDbvMXrkUP5M_Msfba");
+    let imgAdmin = WP_IMG("1MHCddzpDDZ0GfINvvShj7OtTfaWwHNAn");
 
     let html = "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Real Time Production Data - WorkPulse</title>";
     html += "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap' rel='stylesheet'>";
@@ -7382,10 +7418,9 @@ html += "function ejecutarAccionProd(nombreModulo) {" +
             "  } else if (nombreModulo === 'DASHBOARD DE PRODUCCION' || nombreModulo === 'DASHBOARD DE PRODUCCION') {" +
             "    if (window.opener && !window.opener.closed) { window.opener.abrirDashboardProduccionWindow(); }" +
             "  } else if (nombreModulo === 'ADMIN PRODUCTION DATA') {" +
-            "    let pass = prompt('🔐 Ingrese la contraseña de Administrador de Producción:');" +
-            "    if (pass === 'ADMINWP43') {" +
+            "    if (window.opener && window.opener.WP_TIENE_ROL && window.opener.WP_TIENE_ROL(['ADMIN'])) {" +
             "      if (window.opener && !window.opener.closed) { window.opener.abrirAdminProductionSelector(); }" +
-            "    } else if (pass !== null) { alert('❌ Contraseña incorrecta.'); }" +
+            "    } else { alert('Solo un ADMIN de WorkPulse puede entrar a Admin Production Data.'); }" +
             "  } else {" +
             "    alert('🚀 Sub-módulo en desarrollo: ' + nombreModulo);" +
             "  }" +
@@ -7543,10 +7578,8 @@ function abrirLinePerformanceSelector() {
 
     // 7. CAMBIO DE ESTADO ON / OFF (SINTAXIS LIMPIA SIN COMPONENTES ROTOS)
     html += "function toggleEstadoLinea(numLinea, estaActivaActual) {" +
-            "  let pass = prompt('🔐 Ingrese la contraseña de Administrador para cambiar el estado de la Línea ' + numLinea + ':');" +
-            "  if (pass === null) return;" +
-            "  if (pass !== 'ADMINWP43') {" +
-            "    alert('❌ Contraseña incorrecta.');" +
+            "  if (!(window.opener && window.opener.WP_TIENE_ROL && window.opener.WP_TIENE_ROL(['ADMIN']))) {" +
+            "    alert('Solo un ADMIN de WorkPulse puede cambiar el estado de una línea.');" +
             "    return;" +
             "  }" +
             "  let cfg = configLineasMap[numLinea] || {};" +
@@ -11058,12 +11091,12 @@ function abrirSistemaPrimerosAuxiliosEHS() {
     let JS_CLOSE = "</sc" + "ript>";
 
     // RENDERIZADO DIRECTO CON ENLACED HD (LH3 GOOGLE DRIVE)
-    let imgRegistro  = "https://lh3.googleusercontent.com/d/1BDG8D9BDFfZIFMyq6YfBAWy_RfpsOv9N";
-    let imgTracker   = "https://lh3.googleusercontent.com/d/1NvcMFtviMOuHaVQWkdEwK0WvNY3yJ2GK";
-    let imgHistorial = "https://lh3.googleusercontent.com/d/1bz5MLr9HbSpDuqiyPahkAp-RJZWgsqom";
-    let imgAnalytics = "https://lh3.googleusercontent.com/d/1k7kYH23hwkyVM-UPszA6faicOortt0uY";
-    let imgKpi       = "https://lh3.googleusercontent.com/d/1RYchnZcqCne_FZf-4D-kREb1toKW3fK0";
-    let imgAdmin     = "https://lh3.googleusercontent.com/d/1FK63EMPcnYu8JVbBLttH_yU3HiiLevC6";
+    let imgRegistro  = WP_IMG("1BDG8D9BDFfZIFMyq6YfBAWy_RfpsOv9N");
+    let imgTracker   = WP_IMG("1NvcMFtviMOuHaVQWkdEwK0WvNY3yJ2GK");
+    let imgHistorial = WP_IMG("1bz5MLr9HbSpDuqiyPahkAp-RJZWgsqom");
+    let imgAnalytics = WP_IMG("1k7kYH23hwkyVM-UPszA6faicOortt0uY");
+    let imgKpi       = WP_IMG("1RYchnZcqCne_FZf-4D-kREb1toKW3fK0");
+    let imgAdmin     = WP_IMG("1FK63EMPcnYu8JVbBLttH_yU3HiiLevC6");
 
     let html = "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Sistema de Gestión de Primeros Auxilios - EHS</title>";
     html += "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap' rel='stylesheet'>";
@@ -11531,9 +11564,7 @@ function descargarCapturaBanner() {
 // ETAPA 2: SUPERVISOR (FORMATO COMPLETO PRE-LLENADO)
 // =========================================================
 function abrirPanelSupervisorModal() {
-  let pass = prompt("🔐 CONTRASEÑA DE SUPERVISOR:");
-  if (pass === null) return;
-  if (pass.trim() !== "ADMIN") return alert("❌ CONTRASEÑA INCORRECTA.");
+  if (!WP_TIENE_ROL(["ADMIN", "SUPERVISOR"])) return alert("Solo un SUPERVISOR o ADMIN de WorkPulse puede autorizar pases.");
 
   cerrarModal('modal-pase-menu');
   abrirModal('modal-panel-supervisor');
@@ -11657,9 +11688,7 @@ function guardarAutorizacionSup() {
 // ETAPA 3: GUARDIA CASETA 
 // =========================================================
 function abrirPanelGuardiaModal() {
-  let pass = prompt("🔐 CONTRASEÑA DE CASETA DE GUARDIAS:");
-  if (pass === null) return;
-  if (pass.trim() !== "ADMIN") return alert("❌ CONTRASEÑA INCORRECTA.");
+  if (!WP_TIENE_ROL(["ADMIN", "SUPERVISOR"])) return alert("Solo un SUPERVISOR o ADMIN de WorkPulse puede usar el panel de caseta.");
 
   cerrarModal('modal-pase-menu');
   abrirModal('modal-panel-guardia');
@@ -11801,8 +11830,8 @@ function guardarConclusionGuardia() {
 
 // 7. ETAPA 4: CONSULTA RH
 function abrirConsultarPaseModal() {
-  let pass = prompt("🔐 CONTRASEÑA AUDITORÍA RH:");
-  if (pass !== "ADMINMB2026") return alert("❌ ACCESO DENEGADO.");
+  if (!WP_TIENE_ROL(["ADMIN"])) return alert("Solo un ADMIN de WorkPulse puede ver la auditoría de pases.");
+  let pass = "";
 
   cerrarModal('modal-pase-menu');
   loading("Descargando historial de pases...");
@@ -11927,7 +11956,7 @@ function generarDocumentoImpresionRH() {
             width: 900px; 
             height: 605px; 
             margin: 0 auto; 
-            background: url('https://lh3.googleusercontent.com/d/1AQqsLxknoqDrmJMhiTayJWHZnji8ZBNc') no-repeat center/contain; 
+            background: url('${WP_IMG("1AQqsLxknoqDrmJMhiTayJWHZnji8ZBNc")}') no-repeat center/contain; 
             position: relative;
             background-color: #ffffff;
             box-shadow: 0 5px 20px rgba(0,0,0,0.15); 
