@@ -14,7 +14,7 @@
 
     /* ----- Encabezado (igual al sistema original) ----- */
     header.wp-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
-                       background: #fff; border-top: 6px solid var(--verde); border-bottom: 2px solid var(--verde);
+                       background: #fff; border-top: 1px solid var(--borde); border-bottom: 2px solid var(--verde);
                        box-shadow: 0 4px 6px rgba(0,0,0,.03); padding: 12px 20px; }
     .header-left { display: flex; align-items: center; gap: 15px; min-width: 0; }
     .header-left img { height: 42px; width: auto; object-fit: contain; }
@@ -111,7 +111,7 @@
     @media (max-width: 768px) { .plan-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .plan-barra label { margin-left: 0; } }
     td.hora.edit-hora { cursor: pointer; touch-action: manipulation; user-select: none; }
     td.hora.edit-hora:hover { background: #ecfdf5; }
-    .barra-sesion { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 14px;
+    .barra-sesion { border-top: 4px solid var(--verde); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 14px;
                     background: #fff; border-bottom: 1px solid var(--borde); padding: 8px 20px; }
     @media (min-width: 769px) {
       header.wp-header { flex-direction: column; align-items: center; position: relative; gap: 10px; padding: 16px 20px 12px; text-align: center; }
@@ -268,6 +268,11 @@
     .chip.admin { background: #fef3c7; color: #92400e; } .chip.sup { background: #e0f2fe; color: #075985; }
     .chip.off { background: #fee2e2; color: #991b1b; }
     .chip.con { background: #ede9fe; color: #5b21b6; }
+    .chip.pend { background: #fef3c7; color: #92400e; }
+    table.usuarios tr.pendiente td { background: #fffbeb; }
+    table.usuarios .acciones button.aprobar { background: var(--verde); color: #fff; border-color: var(--verde); }
+    .btn-admin.con-pendientes { background: #fde68a; border-color: #d97706; animation: pulsoAdmin 1.6s infinite; }
+    @keyframes pulsoAdmin { 0%, 100% { box-shadow: 0 0 0 0 rgba(217,119,6,.5); } 50% { box-shadow: 0 0 0 6px rgba(217,119,6,0); } }
     .usuario-box .rol.con { background: #ede9fe; color: #5b21b6; }
     body:not(.es-admin) .solo-admin { display: none !important; }
     @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } .grid-6m { grid-template-columns: repeat(2, 1fr); }
@@ -329,6 +334,15 @@
   </style>
 </head>
 <body>
+  <div class="barra-sesion">
+    <div class="estado" id="estado"><span id="estado-texto">Conectando…</span></div>
+    <div class="usuario-box" id="usuario-box" hidden>
+      <span id="usuario"></span>
+      <button type="button" class="btn-admin" id="btn-admin" hidden>Administración</button>
+      <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
+    </div>
+  </div>
+
   <header class="wp-header">
     <div class="header-left">
       <img src="https://www.nidec.com/files/user/www-nidec-com/corporate/about/slogan/img/img_slogan_01.png" alt="Nidec - All for dreams">
@@ -376,15 +390,6 @@
     </div>
   </header>
 
-  <div class="barra-sesion">
-    <div class="estado" id="estado"><span id="estado-texto">Conectando…</span></div>
-    <div class="usuario-box" id="usuario-box" hidden>
-      <span id="usuario"></span>
-      <button type="button" class="btn-admin" id="btn-admin" hidden>Administración</button>
-      <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
-    </div>
-  </div>
-
   <!-- Pantalla de acceso: usuario y contraseña, o darse de alta -->
   <div class="login" id="login">
     <div class="login-card">
@@ -418,7 +423,16 @@
         <label class="campo">Confirmar contraseña
           <input id="al-pass2" type="password" autocomplete="new-password" required>
         </label>
-        <label class="campo">Línea de la que eres encargado
+        <label class="campo">Puesto
+          <select id="al-puesto">
+            <option value="SUPERVISOR">Supervisor (captura su línea)</option>
+            <option value="GERENCIA">Gerencia</option>
+            <option value="SUPERINTENDENTE">Superintendente</option>
+            <option value="INGENIERO">Ingeniero</option>
+          </select>
+          <small id="al-puesto-nota">El administrador aprueba tu cuenta; después podrás capturar en tu línea.</small>
+        </label>
+        <label class="campo" id="al-linea-campo">Línea de la que eres encargado
           <select id="al-linea" required><option value="">Cargando líneas…</option></select>
         </label>
         <label class="campo">Código de registro
@@ -428,6 +442,12 @@
         <button type="submit" class="btn-prim" id="btn-alta">Crear mi cuenta</button>
         <p class="cambio">¿Ya tienes cuenta? <button type="button" class="btn-link" id="ir-entrar">Entrar</button></p>
       </form>
+
+      <div class="form" id="espera" hidden>
+        <h3>Solicitud enviada</h3>
+        <p class="cambio" id="espera-texto" style="text-align:left;"></p>
+        <button type="button" class="btn-sec" id="espera-salir">Cerrar sesión</button>
+      </div>
 
       <p class="login-msg" id="login-msg"></p>
     </div>
@@ -1703,8 +1723,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }, (err) => console.warn("[Horarios]", err));
     }
     function detenerEscuchas() {
-      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios].forEach((f) => { if (f) f(); });
-      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = null;
+      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes].forEach((f) => { if (f) f(); });
+      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = null;
+      pendientesAntes = -1;
     }
     const detener = detenerEscuchas;
 
@@ -1735,6 +1756,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("plan").hidden = true;
       cerrarTv();
       $("modal-tv").hidden = true;
+      quitarEspera();
       $("login").hidden = false;
       $("btn-entrar").disabled = false;
       $("btn-entrar").textContent = "Entrar";
@@ -1816,12 +1838,14 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const u = limpiarUsuario($("al-usuario").value);
       const p = $("al-pass").value, p2 = $("al-pass2").value;
       const linea = $("al-linea").value;
+      const puesto = $("al-puesto").value;
+      const esSup = puesto === "SUPERVISOR";
       const codigo = $("al-codigo").value.trim();
       if (nombre.length < 3) return msgLogin("Escribe tu nombre completo.");
       if (!USUARIO_RE.test(u)) return msgLogin("El usuario debe tener de 3 a 30 caracteres: letras, números, punto, guion o guion bajo.");
       if (p.length < 6) return msgLogin("La contraseña debe tener al menos 6 caracteres.");
       if (p !== p2) return msgLogin("Las contraseñas no coinciden.");
-      if (!linea) return msgLogin("Selecciona la línea de la que eres encargado.");
+      if (esSup && !linea) return msgLogin("Selecciona la línea de la que eres encargado.");
       if (!codigo) return msgLogin("Escribe el código de registro.");
 
       $("btn-alta").disabled = true;
@@ -1831,8 +1855,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         const cred = await createUserWithEmailAndPassword(auth, correoDe(u), p);
         try {
           await setDoc(doc(db, "usuarios", cred.user.uid), {
-            usuario: u, nombre: nombre.toUpperCase(), lineas: [String(linea)], rol: "SUPERVISOR",
-            activo: true, creadoEn: serverTimestamp(), codigo
+            usuario: u, nombre: nombre.toUpperCase(), activo: true, creadoEn: serverTimestamp(), codigo,
+            // Todos entran en espera: nadie ve ni modifica nada hasta que el ADMIN apruebe la cuenta.
+            lineas: esSup ? [String(linea)] : [], rol: "PENDIENTE", solicita: puesto
           });
         } catch (e) {
           // Código incorrecto u otro rechazo: se borra la cuenta recién creada para no dejarla a medias.
@@ -1842,7 +1867,6 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         creandoPerfil = false;
         ["al-pass", "al-pass2", "al-codigo"].forEach((id) => { $(id).value = ""; });
         await entrarConPerfil(cred.user);
-        toast("Cuenta creada. Ya puedes capturar en la Línea " + linea + ".");
       } catch (e) {
         creandoPerfil = false;
         msgLogin(e?.code === "codigo" ? e.message : mensajeAuth(e));
@@ -1866,9 +1890,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           await signOut(auth);
           return;
         }
+        if (d.rol === "PENDIENTE") { mostrarEspera(u.uid, d); return; }
         perfilActual = { uid: u.uid, ...d };
         mostrarApp();
         escucharPerfil(u.uid);
+        if (d.rol === "ADMIN") escucharPendientes();
         iniciar();
         escucharCapturas();
         escucharHorarios();
@@ -1881,11 +1907,42 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }
     }
 
+    // Cuenta pendiente de aprobación: no ve nada hasta que el ADMIN la apruebe (se abre sola al aprobarla)
+    let cancelarEspera = null;
+    function mostrarEspera(uid, d) {
+      $("form-entrar").hidden = true; $("form-alta").hidden = true; $("espera").hidden = false;
+      $("espera-texto").textContent = "Hola " + (d.nombre || d.usuario) + ". Tu cuenta (" + d.usuario + ") pidió el puesto de " +
+        (d.solicita || "consulta") + ". El administrador tiene que aprobarla; en cuanto lo haga, esta página se abre sola.";
+      msgLogin("");
+      if (cancelarEspera) cancelarEspera();
+      cancelarEspera = onSnapshot(doc(db, "usuarios", uid), (snap) => {
+        if (!snap.exists()) { mensajePendiente = "Tu solicitud fue rechazada. Habla con el administrador."; signOut(auth); return; }
+        if (snap.data().rol !== "PENDIENTE" && auth.currentUser) { quitarEspera(); entrarConPerfil(auth.currentUser); }   // aprobada: entra sola
+      }, () => {});
+    }
+    function quitarEspera() {
+      if (cancelarEspera) { cancelarEspera(); cancelarEspera = null; }
+      $("espera").hidden = true; $("form-entrar").hidden = false;
+    }
+
+    // ADMIN: aviso de solicitudes nuevas
+    let cancelarPendientes = null, pendientesAntes = -1;
+    function escucharPendientes() {
+      if (cancelarPendientes) cancelarPendientes();
+      cancelarPendientes = onSnapshot(query(collection(db, "usuarios"), where("rol", "==", "PENDIENTE")), (snap) => {
+        const n = snap.size;
+        $("btn-admin").textContent = n ? "Administración (" + n + " por aprobar)" : "Administración";
+        $("btn-admin").classList.toggle("con-pendientes", n > 0);
+        if (pendientesAntes >= 0 && n > pendientesAntes) toast("Nueva solicitud de acceso. Revísala en Administración.", 6000);
+        pendientesAntes = n;
+      }, (err) => console.warn("[Pendientes]", err));
+    }
+
     function escucharPerfil(uid) {
       if (cancelarPerfil) cancelarPerfil();
       cancelarPerfil = onSnapshot(doc(db, "usuarios", uid), async (snap) => {
-        if (!snap.exists() || snap.data().activo !== true) {
-          mensajePendiente = snap.exists() ? "Tu cuenta fue desactivada." : "Tu cuenta fue eliminada.";
+        if (!snap.exists() || snap.data().activo !== true || snap.data().rol === "PENDIENTE") {
+          mensajePendiente = !snap.exists() ? "Tu cuenta fue eliminada." : snap.data().activo !== true ? "Tu cuenta fue desactivada." : "Tu cuenta quedó pendiente de aprobación.";
           await signOut(auth);
           return;
         }
@@ -2193,7 +2250,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function pintarUsuarios(lista) {
       const cont = $("lista-usuarios");
       if (!lista.length) { vacio(cont, "No hay usuarios."); return; }
-      lista.sort((a, b) => String(a.usuario).localeCompare(String(b.usuario)));
+      lista.sort((a, b) => ((b.rol === "PENDIENTE") - (a.rol === "PENDIENTE")) || String(a.usuario).localeCompare(String(b.usuario)));
       const t = el("table", "usuarios");
       const trh = el("tr");
       ["Usuario", "Nombre", "Líneas", "Rol", "Estado", "Acciones"].forEach((x) => trh.appendChild(el("th", null, x)));
@@ -2204,10 +2261,21 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         const tr = el("tr");
         tr.append(el("td", "fuerte", u.usuario + (soyYo ? " (tú)" : "")), el("td", "izq", u.nombre || ""),
                   el("td", null, (u.lineas || []).join(", ") || "—"));
-        const tdRol = el("td"); tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : soloVer(u.rol) ? "con" : "sup"), u.rol)); tr.appendChild(tdRol);
+        const tdRol = el("td");
+        if (u.rol === "PENDIENTE") { tr.classList.add("pendiente"); tdRol.appendChild(el("span", "chip pend", "PIDE: " + (u.solicita || "?"))); }
+        else tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : soloVer(u.rol) ? "con" : "sup"), u.rol));
+        tr.appendChild(tdRol);
         const tdEst = el("td"); tdEst.appendChild(el("span", "chip " + (u.activo ? "sup" : "off"), u.activo ? "ACTIVO" : "DESACTIVADO")); tr.appendChild(tdEst);
         const acc = el("td"); const caja = el("div", "acciones");
         const boton = (txt, fn, clase) => { const b = el("button", clase || null, txt); b.type = "button"; b.addEventListener("click", fn); caja.appendChild(b); };
+        if (u.rol === "PENDIENTE") {
+          boton("Aprobar como " + (u.solicita || "CONSULTA"), () => aprobarUsuario(u), "aprobar");
+          boton("Otro puesto", () => cambiarRol(u));
+          boton("Líneas", () => editarLineas(u));
+          boton("Rechazar", () => eliminarUsuario(u), "peligro");
+          acc.appendChild(caja); tr.appendChild(acc); tbody.appendChild(tr);
+          return;
+        }
         boton("Líneas", () => editarLineas(u));
         boton("Contraseña", () => cambiarPassword(u));
         if (!soyYo) {
@@ -2239,6 +2307,14 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       actualizarPerfil(u, { lineas }, "Líneas de " + u.usuario + ": " + (lineas.join(", ") || "ninguna"));
     }
 
+    function aprobarUsuario(u) {
+      const rol = ROLES[u.solicita] && u.solicita !== "ADMIN" ? u.solicita : "CONSULTA";
+      if (rol === "SUPERVISOR" && !(u.lineas || []).length) { alert("Pidió ser supervisor pero no tiene línea. Asígnale una con \"Otro puesto\" o \"Líneas\"."); return; }
+      const que = rol === "SUPERVISOR" ? "Podrá ver todo y CAPTURAR en la Línea " + (u.lineas || []).join(", ") + "."
+                                       : "Podrá ver todo, sin modificar nada.";
+      if (!confirm("¿Aprobar a " + (u.nombre || u.usuario) + " como " + rol + "?\n" + que)) return;
+      actualizarPerfil(u, { rol }, u.usuario + " aprobado como " + rol);
+    }
     function cambiarRol(u) {
       const txt = prompt("Rol de " + u.usuario + " (ahora: " + u.rol + "). Escribe uno:\n" +
                          Object.entries(ROLES).filter(([k]) => k !== "CONSULTA").map(([, v]) => "• " + v).join("\n"), u.rol);
@@ -2364,6 +2440,13 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
       $("form-entrar").addEventListener("submit", entrar);
       $("form-alta").addEventListener("submit", darDeAlta);
+      $("al-puesto").addEventListener("change", () => {
+        const sup = $("al-puesto").value === "SUPERVISOR";
+        $("al-linea-campo").hidden = !sup;
+        $("al-puesto-nota").textContent = sup ? "El administrador aprueba tu cuenta; después podrás capturar en tu línea."
+          : "El administrador aprueba tu cuenta; después podrás ver todo, sin modificar nada.";
+      });
+      $("espera-salir").addEventListener("click", () => signOut(auth));
       $("ir-alta").addEventListener("click", verAlta);
       $("ir-entrar").addEventListener("click", verEntrar);
       $("form-captura").addEventListener("submit", guardarCaptura);

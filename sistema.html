@@ -248,6 +248,7 @@
         const snap = await getDoc(doc(db, "usuarios", user.uid));
         const perfil = snap.exists() ? snap.data() : null;
         if (!perfil || perfil.activo !== true) { pantallaAcceso("Tu usuario no está activo. Habla con un administrador."); return; }
+        if (perfil.rol === "PENDIENTE") { pantallaAcceso("Tu cuenta está esperando que el administrador la apruebe."); return; }
         arrancado = true;
         const acceso = document.getElementById("wp-acceso");
         if (acceso) acceso.remove();
