@@ -290,6 +290,14 @@
     .admin-head h2 { margin: 0; color: #92400e; }
     .admin-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; align-items: start; }
     .admin-caja { border: 1px solid var(--borde); border-radius: 8px; padding: 12px; background: #fff; }
+    .rep-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: #334155; cursor: pointer; }
+    .rep-check input { width: 18px; height: 18px; accent-color: var(--verde); }
+    .campo textarea { font: inherit; font-size: 15px; font-weight: 600; padding: 10px 12px; border: 2px solid #cbd5e1; border-radius: 8px; resize: vertical; }
+    .campo textarea:focus { outline: none; border-color: var(--verde); }
+    .rep-prueba { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--borde); }
+    .rep-prueba .campo { flex: 1; min-width: 160px; }
+    .rep-estado { font-size: 12px; font-weight: 700; color: var(--gris); margin: 8px 0 0; }
+    .rep-estado.ok { color: var(--verde); } .rep-estado.mal { color: var(--rojo); }
     .admin-caja h3 { margin: 0 0 10px; font-size: 13px; font-weight: 900; text-transform: uppercase; color: var(--texto); }
     table.usuarios td, table.usuarios th { text-align: left; }
     table.usuarios .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -400,7 +408,7 @@
     </div>
     <div class="btn-group">
         <button type="button" class="btn btn-plan" id="btn-plan">Plan Overview</button>
-        <button type="button" class="btn" data-abrir="SEKAIA" style="--c:#8b5cf6; --t:#8b5cf6; --f:#f5f3ff;">SekaIA</button>
+        <button type="button" class="btn" id="btn-sekaia" style="--c:#8b5cf6; --t:#8b5cf6; --f:#f5f3ff;">SekaIA</button>
         <button type="button" class="btn" data-abrir="T10FUGAS" style="--c:#d97706; --t:#d97706; --f:#fffbeb;">T10 Fugas</button>
         <button type="button" class="btn" data-abrir="TMTTO" style="--c:#2563eb; --t:#2563eb; --f:#eff6ff;">T/MTTO</button>
         <button type="button" class="btn" data-abrir="KPI" style="--c:#009B4A;">KPI</button>
@@ -515,6 +523,28 @@
             <h3>Códigos QR por línea</h3>
             <p class="cambio" style="text-align:left;margin:0 0 10px;">Pega un QR en cada línea: el supervisor lo escanea con el celular y se abre la captura de esa línea.</p>
             <button type="button" class="btn-sec" id="btn-qr">Ver e imprimir QR</button>
+          </div>
+          <div class="admin-caja" style="margin-top:16px;">
+            <h3>Reporte de fin de turno (correo)</h3>
+            <p class="cambio" style="text-align:left;margin:0 0 10px;">Al terminar cada turno se manda a estos correos: cumplimiento por línea, downtime 6M, top fallas, horas críticas y horas sin captura.</p>
+            <form class="form" id="form-reporte" novalidate>
+              <label class="rep-check"><input type="checkbox" id="rep-activo"> Enviar automáticamente al terminar cada turno</label>
+              <label class="campo">Correos de gerencia
+                <textarea id="rep-correos" rows="3" spellcheck="false" placeholder="gerente@nidec-ga.com, superintendente@nidec-ga.com"></textarea>
+                <small>Separados por coma o uno por renglón. Máximo 30.</small></label>
+              <label class="campo">Mandarlo
+                <select id="rep-minutos"><option value="5">5 minutos después del fin del turno</option><option value="10" selected>10 minutos después del fin del turno</option>
+                  <option value="15">15 minutos después del fin del turno</option><option value="30">30 minutos después del fin del turno</option>
+                  <option value="60">1 hora después del fin del turno</option></select>
+                <small>Da tiempo a que los supervisores terminen de capturar.</small></label>
+              <button type="submit" class="btn-sec">Guardar</button>
+              <p class="login-msg" id="rep-msg"></p>
+            </form>
+            <div class="rep-prueba">
+              <label class="campo">Enviar prueba ahora<select id="rep-fin"><option value="">Todo el día (corte actual)</option></select></label>
+              <button type="button" class="btn-sec" id="rep-probar">Enviar prueba</button>
+            </div>
+            <p class="rep-estado" id="rep-estado"></p>
           </div>
           <div class="admin-caja" style="margin-top:16px;">
             <h3>Código de registro</h3>
@@ -668,6 +698,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+  <script src="sekaia.js" defer></script>
   <!-- Pantallas de módulos: el mismo generador del sistema original, alimentado desde Firebase -->
   <script>
     window.WP_MODULOS_HTML = {};
@@ -2002,7 +2033,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         actualizarBotonAvisos();
         if (instalarEvento) $("btn-instalar").hidden = false;
         const ver = new URLSearchParams(location.search).get("ver");
+        prepararSekaIA();
         if (ver === "plan" && $("plan").hidden) abrirPlan(false);
+        if (ver === "sekaia") setTimeout(abrirSekaIA, 300);
         if (ver === "tv") setTimeout(() => { if (pizarronActual) abrirElegirTv(); else setTimeout(abrirElegirTv, 2500); }, 800);
       } catch (e) {
         mensajePendiente = mensajeAuth(e);
@@ -2516,11 +2549,13 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("panel-admin").scrollIntoView({ behavior: "smooth", block: "start" });
       escucharUsuarios();
       cargarCodigo();
+      cargarReporte();
     }
 
     function cerrarAdmin() {
       $("panel-admin").hidden = true;
       if (cancelarUsuarios) { cancelarUsuarios(); cancelarUsuarios = null; }
+      if (cancelarEstadoReporte) { cancelarEstadoReporte(); cancelarEstadoReporte = null; }
     }
 
     function escucharUsuarios() {
@@ -2709,6 +2744,121 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }
     }
 
+    // ---------- Reporte de fin de turno (correo a gerencia) ----------
+    let cancelarEstadoReporte = null;
+    const correoValido = (c) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c);
+    function finesDeTurno() {
+      const fines = new Set();
+      ((pizarronActual && pizarronActual.lineas) || []).forEach((l) => {
+        const filas = horasDeTurno(l.turno);
+        if (filas.length) fines.add(filas[filas.length - 1].fin);
+      });
+      return [...fines].filter((f) => /^\d{1,2}:\d{2}$/.test(f)).sort((a, b) => {
+        const v = (x) => { const m = aMin(x); return m <= 420 ? m + 1440 : m; };
+        return v(a) - v(b);
+      });
+    }
+    async function cargarReporte() {
+      const sel = $("rep-fin");
+      sel.replaceChildren(new Option("Todo el día (corte actual)", ""));
+      finesDeTurno().forEach((f) => sel.add(new Option("Turnos que terminan a las " + f, f)));
+      try {
+        const snap = await getDoc(doc(db, "config", "reporte"));
+        const d = snap.exists() ? snap.data() : {};
+        $("rep-activo").checked = d.activo === true;
+        $("rep-correos").value = (d.correos || []).join(", ");
+        if (d.minutosDespues !== undefined) $("rep-minutos").value = String(d.minutosDespues);
+      } catch (e) { $("rep-msg").textContent = mensajeAuth(e); }
+      if (!cancelarEstadoReporte) {
+        cancelarEstadoReporte = onSnapshot(doc(db, "config", "reporteEstado"), (snap) => {
+          const p = $("rep-estado");
+          if (!snap.exists()) { p.textContent = "Todavía no se ha enviado ningún reporte."; p.className = "rep-estado"; return; }
+          const d = snap.data();
+          const f = d.fecha && d.fecha.toDate ? d.fecha.toDate().toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : "";
+          p.textContent = "Último: " + (d.texto || "") + (f ? " (" + f + ")" : "");
+          p.className = "rep-estado " + (d.ok ? "ok" : "mal");
+        }, () => {});
+      }
+    }
+    async function guardarReporte(ev) {
+      ev.preventDefault();
+      const msg = $("rep-msg");
+      msg.classList.remove("ok-msg");
+      const lista = $("rep-correos").value.split(/[\s,;]+/).map((c) => c.trim().toLowerCase()).filter(Boolean);
+      const malos = lista.filter((c) => !correoValido(c));
+      if (malos.length) { msg.textContent = "Revisa estos correos: " + malos.join(", "); return; }
+      const correos = [...new Set(lista)];
+      if (correos.length > 30) { msg.textContent = "Máximo 30 correos."; return; }
+      if ($("rep-activo").checked && !correos.length) { msg.textContent = "Agrega al menos un correo."; return; }
+      try {
+        await setDoc(doc(db, "config", "reporte"), { activo: $("rep-activo").checked, correos, minutosDespues: parseInt($("rep-minutos").value, 10) || 10,
+                                                     actualizadoEn: serverTimestamp(), actualizadoPor: perfilActual.usuario });
+        $("rep-correos").value = correos.join(", ");
+        msg.textContent = $("rep-activo").checked ? "Guardado. El reporte se enviará al terminar cada turno." : "Guardado. El envío automático está apagado.";
+        msg.classList.add("ok-msg");
+      } catch (e) { msg.textContent = mensajeAuth(e); }
+    }
+    async function probarReporte() {
+      const msg = $("rep-msg");
+      msg.classList.remove("ok-msg");
+      if (!$("rep-correos").value.trim()) { msg.textContent = "Primero guarda al menos un correo."; return; }
+      $("rep-probar").disabled = true;
+      try {
+        await addDoc(collection(db, "solicitudes"), { tipo: "reporte", datos: { fin: $("rep-fin").value }, creadoPor: perfilActual.usuario, creadoEn: serverTimestamp() });
+        msg.textContent = "Prueba solicitada. Llega en 1 o 2 minutos a los correos guardados.";
+        msg.classList.add("ok-msg");
+      } catch (e) { msg.textContent = mensajeAuth(e); }
+      setTimeout(() => { $("rep-probar").disabled = false; }, 60000);
+    }
+
+    // ---------- SekaIA: asistente con IA (contesta Apps Script por la cola "llamadas") ----------
+    async function llamarServidor(fn, args) {
+      const user = auth.currentUser;
+      if (!user || !perfilActual) throw new Error("Inicia sesión para usar SekaIA.");
+      const ref = doc(collection(db, "llamadas"));
+      await setDoc(ref, { uid: user.uid, usuario: perfilActual.usuario, fn, args: JSON.stringify(args), partes: 0,
+                          estado: "pendiente", creadoEn: serverTimestamp() });
+      return new Promise((resolve, reject) => {
+        let fin = false;
+        const timer = setTimeout(() => { if (!fin) { fin = true; unsub(); reject(new Error("El servidor no respondió a tiempo. Intenta de nuevo en un momento.")); } }, 3 * 60 * 1000);
+        const unsub = onSnapshot(ref, async (snap) => {
+          const d = snap.data();
+          if (!d || fin) return;
+          if (d.estado === "listo") {
+            fin = true; clearTimeout(timer); unsub();
+            try {
+              let texto = d.datos || "";
+              if (d.partes > 0) {
+                const ps = await Promise.all(Array.from({ length: d.partes }, (_, i) => getDoc(doc(db, "llamadas", ref.id, "resultado", d.version + "_" + i))));
+                texto = ps.map((p) => (p.exists() ? p.data().texto : "")).join("");
+              }
+              resolve(texto ? JSON.parse(texto) : null);
+            } catch (e) { reject(e); }
+          } else if (d.estado === "error") {
+            fin = true; clearTimeout(timer); unsub(); reject(new Error(d.error || "Error en el servidor."));
+          }
+        }, (err) => { if (!fin) { fin = true; clearTimeout(timer); reject(err); } });
+      });
+    }
+    function avisarPresencia() {      // así Apps Script contesta en segundos (y no al siguiente minuto)
+      if (auth.currentUser && perfilActual) {
+        setDoc(doc(db, "presencia", auth.currentUser.uid), { usuario: perfilActual.usuario, visto: serverTimestamp() }).catch(() => {});
+      }
+    }
+    function prepararSekaIA() {
+      if (!window.WPSekaIA || !perfilActual) return;
+      window.WPSekaIA.configurar({
+        perfil: { nombre: perfilActual.nombre, usuario: perfilActual.usuario, rol: perfilActual.rol, lineas: perfilActual.lineas || [] },
+        llamar: (pregunta, historial) => { avisarPresencia(); return llamarServidor("consultarIA", [pregunta, historial, { formato: "obj" }]); },
+        alAbrir: avisarPresencia
+      });
+    }
+    function abrirSekaIA() {
+      if (!window.WPSekaIA) { toast("SekaIA se está cargando. Intenta en un segundo."); return; }
+      prepararSekaIA();
+      window.WPSekaIA.abrir();
+    }
+
     // ---------- Arranque ----------
     function arrancar() {
       if (firebaseConfig.projectId.startsWith("TU_")) {
@@ -2740,6 +2890,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("cerrar-admin").addEventListener("click", cerrarAdmin);
       $("form-crear").addEventListener("submit", crearUsuario);
       $("form-codigo").addEventListener("submit", guardarCodigo);
+      $("form-reporte").addEventListener("submit", guardarReporte);
+      $("rep-probar").addEventListener("click", probarReporte);
+      $("btn-sekaia").addEventListener("click", abrirSekaIA);
 
       $("btn-salir").addEventListener("click", async () => {
         detenerEscuchas();

@@ -442,6 +442,29 @@
     });
   </script>
 
+  <!-- SekaIA nueva: panel de chat con IA (sekaia.js). El botón SekaIA del sistema abre este panel. -->
+  <script src="sekaia.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function preparar() {
+        var p = (window.__wpPuente && window.__wpPuente.perfil) || {};
+        window.WPSekaIA.configurar({
+          perfil: { nombre: p.nombre, usuario: p.usuario, rol: p.rol, lineas: p.lineas || [] },
+          llamar: function (pregunta, historial) {
+            return new Promise(function (ok, mal) {
+              google.script.run.withSuccessHandler(ok).withFailureHandler(mal).consultarIA(pregunta, historial, { formato: "obj" });
+            });
+          }
+        });
+      }
+      window.abrirResumenIA = function () {
+        if (!window.WPSekaIA) { alert("SekaIA se está cargando. Intenta en un segundo."); return; }
+        preparar();
+        window.WPSekaIA.abrir();
+      };
+    });
+  </script>
+
   
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
