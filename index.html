@@ -48,6 +48,30 @@
                       font: inherit; font-size: 9.5px; font-weight: 800; text-transform: uppercase; padding: 5px 7px; border-radius: 5px;
                       cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.05); transition: all .2s ease; }
     .btn-group .btn:hover { background: var(--c); color: #fff; transform: translateY(-1px); }
+    /* ----- Modo TV ----- */
+    #tv { position: fixed; inset: 0; z-index: 45; background: #fff; display: flex; flex-direction: column; }
+    #tv[hidden] { display: none; }
+    .tv-barra { display: flex; align-items: center; gap: 16px; padding: 8px 18px; border-top: 6px solid var(--verde);
+                border-bottom: 3px solid var(--verde); background: #fff; }
+    .tv-barra img { height: 44px; }
+    .tv-barra h2 { margin: 0; flex: 1; text-align: center; font-size: clamp(20px, 2.6vw, 40px); color: var(--verde); letter-spacing: 1px; }
+    .tv-reloj { font-weight: 900; font-size: clamp(12px, 1.2vw, 18px); color: var(--texto); white-space: nowrap; }
+    .tv-cerrar { background: var(--rojo); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 900; cursor: pointer; }
+    .tv-pantalla { background: #fff; color: var(--verde-osc); border: 2px solid var(--verde); border-radius: 8px; padding: 8px 12px; font: inherit;
+                   font-weight: 900; font-size: 12px; cursor: pointer; }
+    #tv:fullscreen .tv-pantalla { display: none; }
+    .tv-cuerpo { flex: 1; overflow: auto; padding: 10px 14px; }
+    #tv .panel { border: none; box-shadow: none; padding: 0; margin: 0; }
+    #tv .ayuda-captura { display: none; }
+    #tv .board-filtros label, #tv .board-fecha { font-size: clamp(16px, 1.6vw, 26px); }
+    #tv .board-filtros select { font-size: inherit; max-width: none; }
+    #tv table.board { width: 100%; }
+    #tv table.board th { font-size: clamp(13px, 1.3vw, 22px); }
+    #tv table.board th .sup { font-size: clamp(10px, .9vw, 15px); }
+    #tv table.board td { font-size: clamp(20px, 2.4vw, 46px); padding: 6px 4px; }
+    #tv table.board td.hora { font-size: clamp(16px, 1.7vw, 30px); }
+    @media (max-width: 768px) { .tv-barra { flex-wrap: wrap; } .tv-barra h2 { flex-basis: 100%; order: 3; } }
+
     /* ----- Plan Overview ----- */
     .btn-group .btn.btn-plan { --c: #0f172a; --t: #fff; --f: #009B4A; border-color: #007b3a; font-weight: 900; }
     .btn-group .btn.btn-plan:hover { background: #007b3a; }
@@ -315,7 +339,7 @@
           <button type="button" class="btn-neon verde" data-ir="sec-board">Motor Production Board</button>
           <button type="button" class="btn-neon rojo" data-abrir="EHS">Sistema de Gestión de Primeros Auxilios – EHS</button>
           <button type="button" class="btn-alarma" data-abrir="ALARMA">PRIMEROS AUXILIOS</button>
-          <button type="button" class="btn-tv" data-abrir="TV" title="Modo espejo TV Andon">MODO TV</button>
+          <button type="button" class="btn-tv" id="btn-modo-tv" title="Pizarrón en pantalla completa para TV">MODO TV</button>
         </div>
         <div class="header-sub-text">
           <span>AI Manufacturing Management System Powered</span>
@@ -426,9 +450,9 @@
               <label class="campo">Usuario <input id="cr-usuario" autocapitalize="none" spellcheck="false" maxlength="30"></label>
               <label class="campo">Contraseña <input id="cr-pass" type="text" autocomplete="off"><small>Mínimo 6 caracteres. Compártela con la persona.</small></label>
               <label class="campo">Rol
-                <select id="cr-rol"><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="CONSULTA">CONSULTA (ve todo, no captura)</option><option value="ADMIN">ADMIN (todo el panorama)</option></select>
+                <select id="cr-rol"><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="GERENCIA">GERENCIA (solo ver)</option><option value="SUPERINTENDENTE">SUPERINTENDENTE (solo ver)</option><option value="INGENIERO">INGENIERO (solo ver)</option><option value="ADMIN">ADMIN (todo)</option></select>
               </label>
-              <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. ADMIN y CONSULTA pueden dejarlo vacío.</small></label>
+              <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. Solo el SUPERVISOR las necesita.</small></label>
               <button type="submit" class="btn-prim" id="btn-crear">Crear usuario</button>
               <p class="login-msg" id="cr-msg"></p>
             </form>
@@ -451,7 +475,8 @@
     </section>
 
     <h2 id="sec-board">Motor Production Board</h2>
-    <section class="panel">
+    <div id="lugar-board"></div>
+    <section class="panel" id="panel-board">
       <div class="board-filtros">
         <label>ÁREA: <select id="sel-area"></select></label>
         <label>TURNO: <select id="sel-turno"></select></label>
@@ -494,6 +519,34 @@
       </div>
     </div>
   </main>
+
+  <!-- MODO TV: elegir área y turno -->
+  <div class="modal" id="modal-tv" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="tv-titulo">
+      <h3 id="tv-titulo">Modo TV</h3>
+      <div class="modal-sub">Elige el área y el turno que se verán en la pantalla</div>
+      <div class="form">
+        <label class="campo">ÁREA <select id="tv-area"></select></label>
+        <label class="campo">TURNO <select id="tv-turno"></select></label>
+      </div>
+      <div class="modal-botones">
+        <button type="button" class="btn-sec" id="tv-cancelar">Cancelar</button>
+        <button type="button" class="btn-prim" id="tv-abrir">Abrir en pantalla completa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODO TV: solo el pizarrón, pantalla completa; se cierra únicamente con CERRAR -->
+  <section id="tv" hidden aria-label="Modo TV">
+    <div class="tv-barra">
+      <img src="https://www.nidec.com/files/user/www-nidec-com/corporate/about/slogan/img/img_slogan_01.png" alt="Nidec">
+      <h2>MOTOR PRODUCTION BOARD</h2>
+      <span class="tv-reloj" id="tv-reloj"></span>
+      <button type="button" class="tv-pantalla" id="tv-pantalla" title="Pantalla completa">PANTALLA COMPLETA</button>
+      <button type="button" class="tv-cerrar" id="tv-cerrar">&#10005; CERRAR</button>
+    </div>
+    <div class="tv-cuerpo" id="tv-cuerpo"></div>
+  </section>
 
   <!-- PLAN OVERVIEW: todas las líneas activas de 7:00 a 7:00 -->
   <section id="plan" hidden aria-label="Plan Overview">
@@ -1197,30 +1250,39 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     // Horario de cada turno: lo que guardó un ADMIN (config/horarios) > lo que dice el turno
     // ("D / 07:00 - 15:30 / LS" -> ... 14-15, 15:00-15:30) > 07:00 + hora.  Mismo cálculo en Apps Script.
     let horariosConfig = {};
-    let horasActuales = HORAS_BOARD;
+    let horasActuales = [];
     let turnoActual = "";
     const claveTurno = (t) => String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, "_").slice(0, 80) || "SIN_TURNO";
     const aMin = (s) => { const m = String(s).match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1]) * 60 + (+m[2]) : NaN; };
     const aHora = (x) => { x = ((x % 1440) + 1440) % 1440; return String(Math.floor(x / 60)).padStart(2, "0") + ":" + String(x % 60).padStart(2, "0"); };
-    function horasDesdeTurno(turno) {
+    // Filas del turno completo según su horario (mismo cálculo que filasTurno_ en Apps Script):
+    // "MC / 07:00 - 19:00" -> 12 filas, "D / 07:00 - 15:30" -> 9 (la última 15:00-15:30). Sin horas: 07:00-16:00.
+    // idx = horaIndex de la hoja (0 = 07:00 … 23 = 06:00).
+    function filasTurno(turno) {
       const m = String(turno || "").match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
-      if (!m) return null;
-      const ini = (+m[1]) * 60 + (+m[2]);
-      let fin = (+m[3]) * 60 + (+m[4]);
-      if (ini !== 420) return null;
-      if (fin <= ini) fin += 1440;
       const filas = [];
-      for (let t = ini; t < fin && filas.length < 9; t += 60) filas.push([t, Math.min(t + 60, fin)]);
-      while (filas.length && filas.length < 9) { const u = filas[filas.length - 1][1]; filas.push([u, u + 60]); }
-      return filas.length ? filas.map(([a, b]) => [aHora(a), aHora(b)]) : null;
+      if (m) {
+        const ini = (+m[1]) * 60 + (+m[2]);
+        let fin = (+m[3]) * 60 + (+m[4]);
+        if (fin <= ini) fin += 1440;
+        for (let t = ini; t < fin && filas.length < 24; t += 60) {
+          filas.push({ ini: aHora(t), fin: aHora(Math.min(t + 60, fin)), iniAbs: t, idx: ((Math.floor((t - 420) / 60) % 24) + 24) % 24 });
+        }
+      }
+      if (!filas.length) HORAS_BOARD.forEach(([a, b], h) => filas.push({ ini: a, fin: b, iniAbs: aMin(a), idx: h }));
+      return filas;
     }
     function horasDeTurno(turno) {
+      const base = filasTurno(turno);
       const guardadas = horariosConfig[claveTurno(turno)];
-      if (Array.isArray(guardadas) && guardadas.length === 9) {
-        const filas = guardadas.map((s) => String(s).split("-"));
-        if (filas.every((f) => f.length === 2 && !isNaN(aMin(f[0])) && !isNaN(aMin(f[1])))) return filas;
+      if (Array.isArray(guardadas) && guardadas.length === base.length) {
+        const partes = guardadas.map((s) => String(s).split("-"));
+        if (partes.every((f) => f.length === 2 && !isNaN(aMin(f[0])) && !isNaN(aMin(f[1])))) {
+          return base.map((f, i) => ({ ...f, ini: partes[i][0], fin: partes[i][1],
+                                        iniAbs: aMin(partes[i][0]) + (f.iniAbs >= 1440 ? 1440 : 0) }));
+        }
       }
-      return horasDesdeTurno(turno) || HORAS_BOARD;
+      return base;
     }
 
     // Doble clic (o doble toque en el celular) sobre una hora: un ADMIN la cambia
@@ -1230,17 +1292,17 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (ultimoToque.celda === td && ahora - ultimoToque.t < 450) { ultimoToque = { celda: null, t: 0 }; editarHora(idx, cual); }
       else ultimoToque = { celda: td, t: ahora };
     }
-    async function editarHora(idx, cual) {
+    async function editarHora(pos, cual) {
       if (perfilActual?.rol !== "ADMIN") return;
-      const filas = horasActuales.map((f) => f.slice());
-      const actual = filas[idx][cual === "ini" ? 0 : 1];
-      const txt = prompt("Turno " + turnoActual + "\nFila " + (idx + 1) + " · hora de " + (cual === "ini" ? "INICIO" : "FIN") +
+      const filas = horasActuales.map((f) => [f.ini, f.fin]);
+      const actual = filas[pos][cual === "ini" ? 0 : 1];
+      const txt = prompt("Turno " + turnoActual + "\nFila " + (pos + 1) + " · hora de " + (cual === "ini" ? "INICIO" : "FIN") +
                          " (formato 24 h, ej. 15:30):", actual);
       if (txt === null) return;
       const v = txt.trim().replace(/\./g, ":");
       const m = v.match(/^(\d{1,2}):(\d{2})$/);
       if (!m || +m[1] > 23 || +m[2] > 59) { alert("Hora no válida. Usa HH:MM, por ejemplo 15:30."); return; }
-      filas[idx][cual === "ini" ? 0 : 1] = String(m[1]).padStart(2, "0") + ":" + m[2];
+      filas[pos][cual === "ini" ? 0 : 1] = String(m[1]).padStart(2, "0") + ":" + m[2];
       const porTurno = { ...horariosConfig, [claveTurno(turnoActual)]: filas.map((f) => f[0] + "-" + f[1]) };
       try {
         await setDoc(doc(db, "config", "horarios"), { porTurno, actualizadoEn: serverTimestamp(), actualizadoPor: perfilActual.usuario });
@@ -1346,16 +1408,17 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       let acumMeta = 0, acumReal = 0, hayCaptura = false;
       const totLinea = lineas.map(() => 0);
 
-      horasActuales.forEach(([ini, fin], idx) => {
+      horasActuales.forEach((fila, pos) => {
+        const { ini, fin, idx } = fila;
         const metaHora = lineas.reduce((a, l) => a + (parseInt(l.metas?.[idx], 10) || 0), 0);
-        const futura = esHoy && minutoAhora < aMin(ini);
+        const futura = esHoy && minutoAhora < fila.iniAbs;
         const tr = el("tr");
         const tdIni = el("td", "hora", ini), tdFin = el("td", "hora", fin);
         if (esAdminHoras) {
           [[tdIni, "ini"], [tdFin, "fin"]].forEach(([td, cual]) => {
             td.classList.add("edit-hora");
             td.title = "Doble clic para cambiar la hora";
-            td.addEventListener("click", () => toqueHora(td, idx, cual));
+            td.addEventListener("click", () => toqueHora(td, pos, cual));
           });
         }
         tr.append(tdIni, tdFin, el("td", "meta", metaHora));
@@ -1415,7 +1478,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
       t.append(thead, tbody);
       const piezas = [];
-      if (perfilActual && esHoy && perfilActual.rol !== "CONSULTA") {
+      if (perfilActual && esHoy && !soloVer(perfilActual.rol)) {
         const txt = perfilActual.rol === "ADMIN"
           ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar. Doble clic en una hora para cambiar el horario del turno."
           : "Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
@@ -1614,6 +1677,16 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     const hoyISO = () => { const d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
     const lineasDeTexto = (t) => [...new Set(String(t || "").split(/[,;\s]+/).map((x) => x.replace(/[^0-9A-Za-z]/g, "")).filter(Boolean))];
 
+    // Solo ADMIN y SUPERVISOR capturan. GERENCIA, SUPERINTENDENTE, INGENIERO (y CONSULTA) solo ven.
+    const ROLES = {
+      ADMIN: "ADMIN (todo: captura, configura y administra usuarios)",
+      SUPERVISOR: "SUPERVISOR (ve todo, captura solo sus líneas)",
+      GERENCIA: "GERENCIA (solo ver)",
+      SUPERINTENDENTE: "SUPERINTENDENTE (solo ver)",
+      INGENIERO: "INGENIERO (solo ver)",
+      CONSULTA: "CONSULTA (solo ver)"
+    };
+    const soloVer = (rol) => rol !== "ADMIN" && rol !== "SUPERVISOR";
     function puedeEditarLinea(linea) {
       if (!perfilActual || perfilActual.activo !== true) return false;
       if (perfilActual.rol === "ADMIN") return true;
@@ -1660,6 +1733,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("panel-admin").hidden = true;
       $("modal-captura").hidden = true;
       $("plan").hidden = true;
+      cerrarTv();
+      $("modal-tv").hidden = true;
       $("login").hidden = false;
       $("btn-entrar").disabled = false;
       $("btn-entrar").textContent = "Entrar";
@@ -1671,7 +1746,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const p = perfilActual;
       const caja = $("usuario");
       const rol = p.rol === "ADMIN" ? el("span", "rol admin", "ADMIN")
-                : p.rol === "CONSULTA" ? el("span", "rol con", "CONSULTA")
+                : soloVer(p.rol) ? el("span", "rol con", p.rol || "CONSULTA")
                 : el("span", "rol", "Línea " + (p.lineas || []).join(", "));
       caja.replaceChildren(document.createTextNode((p.nombre || p.usuario) + " (" + p.usuario + ") "), rol);
       $("btn-admin").hidden = p.rol !== "ADMIN";
@@ -1797,7 +1872,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         iniciar();
         escucharCapturas();
         escucharHorarios();
-        if (new URLSearchParams(location.search).get("ver") === "plan" && $("plan").hidden) abrirPlan(false);
+        const ver = new URLSearchParams(location.search).get("ver");
+        if (ver === "plan" && $("plan").hidden) abrirPlan(false);
+        if (ver === "tv") setTimeout(() => { if (pizarronActual) abrirElegirTv(); else setTimeout(abrirElegirTv, 2500); }, 800);
       } catch (e) {
         mensajePendiente = mensajeAuth(e);
         await signOut(auth);
@@ -1855,6 +1932,56 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         if (!cancelar) mostrarError(mensajeDeError(err));
       }
     }
+
+    // ---------- MODO TV ----------
+    let relojTv = null, candadoPantalla = null;
+    function abrirElegirTv() {
+      const sa = $("sel-area"), st = $("sel-turno");
+      const copiar = (de, a) => { a.replaceChildren(...[...de.options].map((o) => { const n = el("option", null, o.textContent); n.value = o.value; return n; })); a.value = de.value; };
+      copiar(sa, $("tv-area"));
+      copiar(st, $("tv-turno"));
+      $("modal-tv").hidden = false;
+    }
+    $("tv-area").addEventListener("change", () => {
+      // el área cambia los turnos disponibles: se usan los del pizarrón
+      $("sel-area").value = $("tv-area").value; pintarPizarron();
+      const st = $("sel-turno");
+      $("tv-turno").replaceChildren(...[...st.options].map((o) => { const n = el("option", null, o.textContent); n.value = o.value; return n; }));
+      $("tv-turno").value = st.value;
+    });
+    async function pantallaCompleta() {
+      try { if (!document.fullscreenElement && $("tv").requestFullscreen) await $("tv").requestFullscreen(); } catch (e) { /* el navegador no lo permite */ }
+      try { if (navigator.wakeLock) candadoPantalla = await navigator.wakeLock.request("screen"); } catch (e) { /* sin bloqueo de pantalla */ }
+    }
+    function abrirTv() {
+      $("modal-tv").hidden = true;
+      $("sel-area").value = $("tv-area").value; pintarPizarron();
+      $("sel-turno").value = $("tv-turno").value; pintarPizarron();
+      $("tv-cuerpo").appendChild($("panel-board"));          // el mismo pizarrón, en vivo, a pantalla completa
+      $("tv").hidden = false;
+      document.body.style.overflow = "hidden";
+      const reloj = () => { $("tv-reloj").textContent = new Date().toLocaleString("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", second: "2-digit" }); };
+      reloj(); clearInterval(relojTv); relojTv = setInterval(reloj, 1000);
+      pantallaCompleta();
+    }
+    function cerrarTv() {
+      if ($("tv").hidden) return;
+      $("lugar-board").after($("panel-board"));
+      $("tv").hidden = true;
+      document.body.style.overflow = "";
+      clearInterval(relojTv); relojTv = null;
+      try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {}
+      try { if (candadoPantalla) candadoPantalla.release(); } catch (e) {}
+      candadoPantalla = null;
+      if (/[?&]ver=tv/.test(location.search)) history.replaceState(null, "", location.pathname);
+    }
+    $("btn-modo-tv").addEventListener("click", abrirElegirTv);
+    $("tv-cancelar").addEventListener("click", () => { $("modal-tv").hidden = true; });
+    $("tv-abrir").addEventListener("click", abrirTv);
+    $("tv-cerrar").addEventListener("click", cerrarTv);
+    $("tv-pantalla").addEventListener("click", pantallaCompleta);
+    // el bloqueo de pantalla se suelta al cambiar de pestaña: se vuelve a pedir al regresar
+    document.addEventListener("visibilitychange", () => { if (!$("tv").hidden && document.visibilityState === "visible") pantallaCompleta(); });
 
     // ---------- PLAN OVERVIEW ----------
     const HORAS_PLAN = Array.from({ length: 24 }, (_, i) => [aHora(420 + i * 60), aHora(480 + i * 60)]);
@@ -1978,7 +2105,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     const CAMPOS_6M = ["hombre", "maquina", "material", "metodo", "calidad", "produccion", "otros"];
 
     function abrirCaptura(l, idx, cap) {
-      const [ini, fin] = horasActuales[idx] || HORAS_BOARD[idx];
+      const fila = horasActuales.find((f) => f.idx === idx) || { ini: aHora(420 + idx * 60), fin: aHora(480 + idx * 60) };
+      const ini = fila.ini, fin = fila.fin;
       capturaActual = { linea: String(l.linea), idx };
       $("cap-titulo").textContent = "Línea " + l.linea + " · " + ini + " – " + fin;
       $("cap-sub").textContent = "Meta de la hora: " + (parseInt(l.metas?.[idx], 10) || 0) + " pzs · Supervisor: " + (l.supervisor || "—");
@@ -2076,7 +2204,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         const tr = el("tr");
         tr.append(el("td", "fuerte", u.usuario + (soyYo ? " (tú)" : "")), el("td", "izq", u.nombre || ""),
                   el("td", null, (u.lineas || []).join(", ") || "—"));
-        const tdRol = el("td"); tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : u.rol === "CONSULTA" ? "con" : "sup"), u.rol)); tr.appendChild(tdRol);
+        const tdRol = el("td"); tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : soloVer(u.rol) ? "con" : "sup"), u.rol)); tr.appendChild(tdRol);
         const tdEst = el("td"); tdEst.appendChild(el("span", "chip " + (u.activo ? "sup" : "off"), u.activo ? "ACTIVO" : "DESACTIVADO")); tr.appendChild(tdEst);
         const acc = el("td"); const caja = el("div", "acciones");
         const boton = (txt, fn, clase) => { const b = el("button", clase || null, txt); b.type = "button"; b.addEventListener("click", fn); caja.appendChild(b); };
@@ -2113,12 +2241,10 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
     function cambiarRol(u) {
       const txt = prompt("Rol de " + u.usuario + " (ahora: " + u.rol + "). Escribe uno:\n" +
-                         "ADMIN = ve y captura todo, administra usuarios\n" +
-                         "SUPERVISOR = ve todo, captura solo sus líneas\n" +
-                         "CONSULTA = ve todo, no captura (gerentes, otras plantas)", u.rol);
+                         Object.entries(ROLES).filter(([k]) => k !== "CONSULTA").map(([, v]) => "• " + v).join("\n"), u.rol);
       if (txt === null) return;
       const nuevo = String(txt).trim().toUpperCase();
-      if (!["ADMIN", "SUPERVISOR", "CONSULTA"].includes(nuevo)) { alert("Rol no válido. Usa ADMIN, SUPERVISOR o CONSULTA."); return; }
+      if (!ROLES[nuevo]) { alert("Rol no válido. Usa: " + Object.keys(ROLES).filter((k) => k !== "CONSULTA").join(", ") + "."); return; }
       if (nuevo === u.rol) return;
       if (nuevo === "SUPERVISOR" && !(u.lineas || []).length) { alert("Primero asígnale al menos una línea con el botón \"Líneas\"."); return; }
       actualizarPerfil(u, { rol: nuevo }, u.usuario + " ahora es " + nuevo);
