@@ -1,0 +1,17 @@
+{
+  "name": "WorkPulse · Nidec ACIM Reynosa",
+  "short_name": "WorkPulse",
+  "description": "AI Manufacturing Management System · tablero y captura de producción",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#009B4A",
+  "lang": "es-MX",
+  "icons": [
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

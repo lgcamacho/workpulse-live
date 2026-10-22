@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>WorkPulse</title>
+  <!-- App instalable (celular y computadora) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#009B4A">
+  <link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
+  <link rel="apple-touch-icon" href="icono-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="WorkPulse">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <style>
     :root {
       --verde: #009B4A; --verde-osc: #007b3a; --texto: #0f172a; --gris: #64748b; --borde: #e2e8f0;
@@ -48,6 +57,29 @@
                       font: inherit; font-size: 9.5px; font-weight: 800; text-transform: uppercase; padding: 5px 7px; border-radius: 5px;
                       cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.05); transition: all .2s ease; }
     .btn-group .btn:hover { background: var(--c); color: #fff; transform: translateY(-1px); }
+    /* ----- Pronóstico, recordatorios, QR, instalar ----- */
+    table.board tr.pron td { background: #f8fafc; border-top: 2px dashed #94a3b8; font-size: clamp(13px, 1.2vw, 20px); }
+    table.board tr.pron td small { display: block; font-size: .62em; font-weight: 800; opacity: .9; }
+    table.board tr.pron td.pron-tit { font-size: clamp(11px, 1vw, 16px); color: #334155; letter-spacing: .5px; }
+    .pron-aviso { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px;
+                  font-weight: 900; font-size: 13px; border: 2px solid; }
+    .pron-aviso b { font-size: 18px; }
+    .pron-aviso small { font-weight: 700; opacity: .85; }
+    #tv .pron-aviso { font-size: clamp(14px, 1.4vw, 24px); }
+    #tv .pron-aviso b { font-size: clamp(18px, 2vw, 34px); }
+    .recordatorio { position: fixed; right: 14px; bottom: 14px; z-index: 48; width: min(360px, calc(100% - 24px));
+                    background: #fff7ed; border: 2px solid #f97316; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.2); padding: 10px 12px; }
+    .recordatorio[hidden] { display: none; }
+    .recordatorio h4 { margin: 0 0 6px; color: #c2410c; font-size: 14px; font-weight: 900; }
+    .recordatorio ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow: auto; }
+    .recordatorio li { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 800; font-size: 12px; }
+    .recordatorio li button { background: #f97316; color: #fff; border: none; border-radius: 6px; padding: 6px 10px; font: inherit; font-weight: 900; cursor: pointer; }
+    .recordatorio .rec-cerrar { position: absolute; top: 6px; right: 10px; background: none; border: none; font-size: 18px; cursor: pointer; color: #9a3412; }
+    .btn-mini { background: #fff; border: 1.5px solid var(--verde); color: var(--verde-osc); border-radius: 6px; padding: 5px 9px; font: inherit;
+                font-size: 11px; font-weight: 900; cursor: pointer; }
+    .btn-mini[hidden] { display: none; }
+    table.board th.resaltar, table.board td.resaltar { box-shadow: inset 0 0 0 3px #2563eb; }
+
     /* ----- Modo TV ----- */
     #tv { position: fixed; inset: 0; z-index: 45; background: #fff; display: flex; flex-direction: column; }
     #tv[hidden] { display: none; }
@@ -338,6 +370,8 @@
     <div class="estado" id="estado"><span id="estado-texto">Conectando…</span></div>
     <div class="usuario-box" id="usuario-box" hidden>
       <span id="usuario"></span>
+      <button type="button" class="btn-mini" id="btn-instalar" hidden title="Instalar WorkPulse como app">Instalar app</button>
+      <button type="button" class="btn-mini" id="btn-avisos" hidden title="Recibir avisos de horas sin capturar">Activar avisos</button>
       <button type="button" class="btn-admin" id="btn-admin" hidden>Administración</button>
       <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
     </div>
@@ -478,6 +512,11 @@
             </form>
           </div>
           <div class="admin-caja" style="margin-top:16px;">
+            <h3>Códigos QR por línea</h3>
+            <p class="cambio" style="text-align:left;margin:0 0 10px;">Pega un QR en cada línea: el supervisor lo escanea con el celular y se abre la captura de esa línea.</p>
+            <button type="button" class="btn-sec" id="btn-qr">Ver e imprimir QR</button>
+          </div>
+          <div class="admin-caja" style="margin-top:16px;">
             <h3>Código de registro</h3>
             <form class="form" id="form-codigo" novalidate>
               <label class="campo">Código actual <input id="cod-valor" autocapitalize="characters" spellcheck="false" maxlength="40">
@@ -539,6 +578,13 @@
       </div>
     </div>
   </main>
+
+  <!-- Recordatorio: horas que ya terminaron y siguen sin captura -->
+  <div class="recordatorio" id="recordatorio" hidden role="status" aria-live="polite">
+    <button type="button" class="rec-cerrar" id="rec-cerrar" title="Ocultar">&times;</button>
+    <h4>Falta capturar <small style="font-weight:700;color:#9a3412">(horas que ya terminaron)</small></h4>
+    <ul id="rec-lista"></ul>
+  </div>
 
   <!-- MODO TV: elegir área y turno -->
   <div class="modal" id="modal-tv" hidden>
@@ -1361,7 +1407,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     const norm = (x) => String(x ?? "").toUpperCase().trim();
 
     function pintarPizarron(p) {
-      if (p !== undefined) pizarronActual = p;
+      if (p !== undefined) { pizarronActual = p; setTimeout(() => { atenderQR(); revisarRecordatorios(); }, 0); }
       p = pizarronActual;
       const cont = $("board");
       if (!p) { vacio(cont, "El pizarrón todavía no se publica. Ejecuta publicarResumenEnFirestore en Apps Script."); return; }
@@ -1428,6 +1474,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const tbody = el("tbody");
       let acumMeta = 0, acumReal = 0, hayCaptura = false;
       const totLinea = lineas.map(() => 0);
+      const metaCapLinea = lineas.map(() => 0), metaTurnoLinea = lineas.map(() => 0);   // para el pronóstico
 
       horasActuales.forEach((fila, pos) => {
         const { ini, fin, idx } = fila;
@@ -1446,6 +1493,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
         let suma = 0, capturada = false;
         lineas.forEach((l, i) => {
+          const metaL = parseInt(l.metas?.[idx], 10) || 0;
+          metaTurnoLinea[i] += metaL;
           let v = Array.isArray(l.real) ? l.real[idx] : null;
           // Capturas hechas desde esta página que todavía no llegan a la hoja (o que fueron rechazadas)
           const cap = esHoy ? capturasHoy.get(String(l.linea) + "_" + idx) : null;
@@ -1458,7 +1507,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
             const val = num(v);
             td = el("td", null, val);
             pintarAndon(td, andon(val, parseInt(l.metas?.[idx], 10) || 300));
-            suma += val; totLinea[i] += val; capturada = true;
+            suma += val; totLinea[i] += val; capturada = true; metaCapLinea[i] += metaL;
           } else {
             td = el("td", futura ? "nd bloq" : "nd", futura ? "" : "-");
           }
@@ -1498,8 +1547,50 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         .forEach((x) => { const td = el("td", null, x); if (hayCaptura) pintarAndon(td, estTot); trt.appendChild(td); });
       tbody.appendChild(trt);
 
+      // PRONÓSTICO DE CIERRE: lo real + el ritmo que lleva cada línea (real / meta de las horas capturadas)
+      // aplicado a la meta de las horas que faltan.
+      let pronAviso = null;
+      if (esHoy && hayCaptura) {
+        const pron = lineas.map((l, i) => metaCapLinea[i] > 0
+          ? Math.round(totLinea[i] + (totLinea[i] / metaCapLinea[i]) * (metaTurnoLinea[i] - metaCapLinea[i])) : null);
+        const trp = el("tr", "pron");
+        const tdP = el("td", "pron-tit", "PRONÓSTICO DE CIERRE"); tdP.colSpan = 2;
+        const metaTurno = metaTurnoLinea.reduce((a, b) => a + b, 0);
+        const tdPM = el("td", null, metaTurno); tdPM.title = "Meta de todo el turno";
+        trp.append(tdP, tdPM);
+        let pronTot = 0, metaConPron = 0;
+        lineas.forEach((l, i) => {
+          const td = el("td");
+          if (pron[i] === null) { td.textContent = "—"; }
+          else {
+            pronTot += pron[i]; metaConPron += metaTurnoLinea[i];
+            const pct = metaTurnoLinea[i] > 0 ? Math.round(pron[i] / metaTurnoLinea[i] * 100) : 0;
+            td.textContent = pron[i].toLocaleString("es-MX");
+            td.appendChild(el("small", null, pct + "% de " + metaTurnoLinea[i].toLocaleString("es-MX")));
+            if (metaTurnoLinea[i] > 0) pintarAndon(td, andon(pron[i], metaTurnoLinea[i]));
+          }
+          trp.appendChild(td);
+        });
+        const estP = andon(pronTot, metaConPron);
+        const pctTot = metaConPron > 0 ? Math.round(pronTot / metaConPron * 100) : 0;
+        const deltaP = pronTot - metaConPron;
+        [pronTot.toLocaleString("es-MX"), pctTot + "%", (deltaP > 0 ? "+" : "") + deltaP.toLocaleString("es-MX"), (pronTot / 198).toFixed(1)]
+          .forEach((x) => { const td = el("td", null, x); pintarAndon(td, estP); trp.appendChild(td); });
+        tbody.appendChild(trp);
+        const ultimo = horasActuales.length ? horasActuales[horasActuales.length - 1].fin : "";
+        pronAviso = el("div", "pron-aviso");
+        pronAviso.style.background = estP.bg === "#fbff00" ? "#fefce8" : estP.bg === "#009B4A" ? "#f0fdf4" : "#fef2f2";
+        pronAviso.style.borderColor = estP.bg === "#fbff00" ? "#ca8a04" : estP.bg;
+        pronAviso.style.color = estP.bg === "#fbff00" ? "#854d0e" : estP.bg;
+        pronAviso.append(document.createTextNode("PRONÓSTICO: a este ritmo el turno cierra" + (ultimo ? " (" + ultimo + ")" : "") + " en"),
+                         el("b", null, pronTot.toLocaleString("es-MX") + " / " + metaConPron.toLocaleString("es-MX") + " pzs · " + pctTot + "%"),
+                         el("small", null, deltaP >= 0 ? "Va a cumplir la meta (+" + deltaP.toLocaleString("es-MX") + ")"
+                                                       : "Faltarían " + Math.abs(deltaP).toLocaleString("es-MX") + " piezas para la meta"));
+      }
+
       t.append(thead, tbody);
       const piezas = [];
+      if (pronAviso) piezas.push(pronAviso);
       if (perfilActual && esHoy && !soloVer(perfilActual.rol)) {
         const txt = perfilActual.rol === "ADMIN"
           ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar. Doble clic en una hora para cambiar el horario del turno."
@@ -1765,6 +1856,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       cerrarTv();
       $("modal-tv").hidden = true;
       quitarEspera();
+      $("recordatorio").hidden = true;
+      $("btn-avisos").hidden = true; $("btn-instalar").hidden = true;
       $("login").hidden = false;
       $("btn-entrar").disabled = false;
       $("btn-entrar").textContent = "Entrar";
@@ -1906,6 +1999,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         iniciar();
         escucharCapturas();
         escucharHorarios();
+        actualizarBotonAvisos();
+        if (instalarEvento) $("btn-instalar").hidden = false;
         const ver = new URLSearchParams(location.search).get("ver");
         if (ver === "plan" && $("plan").hidden) abrirPlan(false);
         if (ver === "tv") setTimeout(() => { if (pizarronActual) abrirElegirTv(); else setTimeout(abrirElegirTv, 2500); }, 800);
@@ -1996,6 +2091,186 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       } catch (err) {
         if (!cancelar) mostrarError(mensajeDeError(err));
       }
+    }
+
+    // ---------- RECORDATORIO DE CAPTURA ----------
+    // A los 10 minutos de terminar una hora sin captura, se avisa al supervisor de esa línea (y al ADMIN de todas).
+    const MIN_RECORDATORIO = 10;
+    let recOcultoHasta = 0;
+    let avisadas = new Set();
+    try { avisadas = new Set(JSON.parse(sessionStorage.getItem("wpAvisadas") || "[]")); } catch (e) { /* sin almacenamiento */ }
+    function faltantes() {
+      const p = pizarronActual;
+      if (!p || !perfilActual || soloVer(perfilActual.rol) || p.fecha !== fechaHoyCliente()) return [];
+      const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
+      const mias = (perfilActual.lineas || []).map(String);
+      const lista = [];
+      (p.lineas || []).forEach((l) => {
+        if (perfilActual.rol !== "ADMIN" && !mias.includes(String(l.linea))) return;
+        horasDeTurno(l.turno).forEach((f) => {
+          const meta = parseInt(l.metas?.[f.idx], 10) || 0;
+          if (meta <= 0) return;
+          const dur = ((aMin(f.fin) - aMin(f.ini)) + 1440) % 1440 || 60;
+          const finAbs = f.iniAbs + dur;
+          if (f.iniAbs >= 1440 || min < finAbs + MIN_RECORDATORIO) return;          // aún no pasan 10 min de que terminó
+          const r = l.real?.[f.idx];
+          const cap = capturasHoy.get(String(l.linea) + "_" + f.idx);
+          if ((r !== null && r !== undefined && r !== "") || (cap && cap.estado !== "rechazado")) return;
+          lista.push({ l, f, clave: p.fecha + "_" + l.linea + "_" + f.idx });
+        });
+      });
+      return lista;
+    }
+    async function notificar(titulo, cuerpo, etiqueta) {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      try {
+        // En Android los avisos solo salen por el service worker: se espera a que esté listo (máx. 4 s)
+        const reg = navigator.serviceWorker
+          ? await Promise.race([navigator.serviceWorker.ready, new Promise((r) => setTimeout(() => r(null), 4000))]) : null;
+        if (reg) await reg.showNotification(titulo, { body: cuerpo, tag: etiqueta, icon: "icono-192.png", badge: "icono-192.png", vibrate: [200, 100, 200] });
+        else new Notification(titulo, { body: cuerpo, tag: etiqueta, icon: "icono-192.png" });
+      } catch (e) { /* el navegador no permite avisos */ }
+    }
+    function revisarRecordatorios() {
+      const lista = faltantes();
+      const caja = $("recordatorio");
+      if (!lista.length || Date.now() < recOcultoHasta || !$("plan").hidden || !$("tv").hidden) { caja.hidden = true; }
+      else {
+        $("rec-lista").replaceChildren(...lista.slice(0, 5).map(({ l, f }) => {
+          const li = el("li");
+          li.append(el("span", null, "Línea " + l.linea + " · " + f.ini + " – " + f.fin));
+          const b = el("button", null, "Capturar"); b.type = "button";
+          b.addEventListener("click", () => { irALinea(l.linea, f.idx); });
+          li.appendChild(b);
+          return li;
+        }));
+        if (lista.length > 5) $("rec-lista").appendChild(el("li", null, "… y " + (lista.length - 5) + " más"));
+        caja.hidden = false;
+      }
+      const nuevas = lista.filter((x) => !avisadas.has(x.clave));
+      if (nuevas.length) {
+        nuevas.forEach((x) => avisadas.add(x.clave));
+        try { sessionStorage.setItem("wpAvisadas", JSON.stringify([...avisadas].slice(-200))); } catch (e) {}
+        const txt = nuevas.slice(0, 3).map(({ l, f }) => "Línea " + l.linea + " " + f.ini + "–" + f.fin).join(", ") + (nuevas.length > 3 ? "…" : "");
+        notificar("WorkPulse · Falta capturar", txt, "wp-falta");
+      }
+    }
+    $("rec-cerrar").addEventListener("click", () => { recOcultoHasta = Date.now() + 15 * 60000; $("recordatorio").hidden = true; });
+    setInterval(revisarRecordatorios, 30000);
+
+    function actualizarBotonAvisos() {
+      const b = $("btn-avisos");
+      b.hidden = !("Notification" in window) || !perfilActual || soloVer(perfilActual.rol) || Notification.permission !== "default";
+    }
+    $("btn-avisos").addEventListener("click", async () => {
+      try {
+        const r = await Notification.requestPermission();
+        if (r === "granted") { toast("Avisos activados: te avisamos cuando falte capturar una hora."); notificar("WorkPulse", "Los avisos quedaron activados.", "wp-prueba"); }
+        else toast("No se activaron los avisos. Puedes activarlos en la configuración del navegador.", 5000);
+      } catch (e) { toast("Este navegador no permite avisos.", 4000); }
+      actualizarBotonAvisos();
+    });
+
+    // ---------- QR POR LÍNEA ----------
+    // El QR abre  .../workpulse-live/?linea=7 : después de entrar, se va a esa línea y abre la captura de la hora que toca.
+    function irALinea(linea, idxPreferido) {
+      const p = pizarronActual;
+      if (!p) return false;
+      const l = (p.lineas || []).find((x) => String(x.linea) === String(linea));
+      if (!l) { toast("La Línea " + linea + " no está en el pizarrón de hoy.", 5000); return true; }
+      $("sel-area").value = l.area; pintarPizarron();
+      $("sel-turno").value = l.turno; pintarPizarron();
+      $("recordatorio").hidden = true;
+      $("sec-board").scrollIntoView({ behavior: "smooth", block: "start" });
+      // resaltar la columna de la línea: en el encabezado y en "totales/pronóstico" HORA ocupa 1 celda; en las filas, 2
+      const col = [...document.querySelectorAll("table.board thead th")].findIndex((th) => th.textContent.startsWith("LÍNEA " + l.linea + " ") || th.textContent === "LÍNEA " + l.linea || th.firstChild?.textContent === "LÍNEA " + l.linea);
+      if (col >= 0) document.querySelectorAll("table.board tr").forEach((tr) => {
+        const enCabecera = tr.parentNode.tagName === "THEAD" || tr.classList.contains("tot") || tr.classList.contains("pron");
+        const celda = tr.children[enCabecera ? col : col + 1];
+        if (celda) { celda.classList.add("resaltar"); setTimeout(() => celda.classList.remove("resaltar"), 4000); }
+      });
+      if (!puedeEditarLinea(l.linea)) { toast("Puedes ver la Línea " + l.linea + ", pero no capturar en ella.", 4000); return true; }
+      const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
+      const abiertas = horasActuales.filter((f) => min >= f.iniAbs - MINUTOS_ANTES);
+      const vacia = (f) => { const r = l.real?.[f.idx]; const c = capturasHoy.get(String(l.linea) + "_" + f.idx); return (r === null || r === undefined || r === "") && !(c && c.estado === "pendiente"); };
+      let fila = idxPreferido !== undefined ? abiertas.find((f) => f.idx === idxPreferido) : null;
+      fila = fila || abiertas.filter(vacia)[0] || abiertas[abiertas.length - 1];
+      if (!fila) { toast("Todavía no empieza la primera hora del turno.", 4000); return true; }
+      const cap = capturasHoy.get(String(l.linea) + "_" + fila.idx);
+      setTimeout(() => abrirCaptura(l, fila.idx, cap), 450);
+      return true;
+    }
+    let lineaPendienteQR = new URLSearchParams(location.search).get("linea");
+    function atenderQR() {
+      if (!lineaPendienteQR || !pizarronActual || !perfilActual) return;
+      const l = lineaPendienteQR; lineaPendienteQR = null;
+      history.replaceState(null, "", location.pathname);
+      irALinea(l);
+    }
+
+    async function cargarLibQR() {
+      if (window.qrcode) return;
+      await new Promise((ok, mal) => {
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+        s.onload = ok; s.onerror = () => mal(new Error("No se pudo cargar el generador de QR."));
+        document.head.appendChild(s);
+      });
+    }
+    $("btn-qr").addEventListener("click", async () => {
+      const win = window.open("", "_blank");
+      if (!win) { toast("El navegador bloqueó la ventana. Permite ventanas emergentes.", 5000); return; }
+      win.document.write("<p style='font-family:sans-serif;text-align:center;padding-top:20vh'>Generando códigos QR…</p>");
+      try {
+        await cargarLibQR();
+        const lineas = (pizarronActual?.lineas || []).map((l) => ({ linea: String(l.linea), area: l.area || "", sup: l.supervisor || "" }))
+          .sort((a, b) => (parseInt(a.linea, 10) || 0) - (parseInt(b.linea, 10) || 0));
+        const base = location.origin + location.pathname.replace(/[^/]*$/, "");
+        const tarjetas = lineas.map((x) => {
+          const qr = qrcode(0, "M"); qr.addData(base + "?linea=" + encodeURIComponent(x.linea)); qr.make();
+          return { ...x, img: qr.createDataURL(8, 2), url: base + "?linea=" + x.linea };
+        });
+        const d = win.document;
+        d.open();
+        d.write("<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>QR por línea · WorkPulse</title><style>" +
+          "body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:16px;color:#0f172a}" +
+          ".barra{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.barra button{background:#009B4A;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:900;cursor:pointer}" +
+          ".rejilla{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}" +
+          ".t{border:3px solid #009B4A;border-radius:12px;padding:12px;text-align:center;break-inside:avoid}" +
+          ".t h2{margin:0;color:#009B4A;font-size:28px;font-weight:900}.t p{margin:2px 0;font-size:12px;font-weight:700;color:#475569}" +
+          ".t img{width:100%;max-width:220px;image-rendering:pixelated}.t .u{font-size:9px;color:#94a3b8;word-break:break-all}" +
+          "@media print{.barra{display:none}body{padding:0}}</style></head><body>" +
+          "<div class='barra'><h1 style='margin:0;color:#009B4A;font-size:20px'>WORKPULSE · QR de captura por línea</h1><button onclick='print()'>Imprimir</button></div>" +
+          "<div class='rejilla'></div></body></html>");
+        d.close();
+        const rej = d.querySelector(".rejilla");
+        tarjetas.forEach((x) => {
+          const div = d.createElement("div"); div.className = "t";
+          const h = d.createElement("h2"); h.textContent = "LÍNEA " + x.linea;
+          const a = d.createElement("p"); a.textContent = [x.area, x.sup].filter(Boolean).join(" · ");
+          const im = d.createElement("img"); im.src = x.img; im.alt = "QR Línea " + x.linea;
+          const q = d.createElement("p"); q.textContent = "Escanea para capturar la producción";
+          const u = d.createElement("div"); u.className = "u"; u.textContent = x.url;
+          div.append(h, a, im, q, u); rej.appendChild(div);
+        });
+        if (!tarjetas.length) rej.textContent = "No hay líneas en el pizarrón.";
+      } catch (e) {
+        win.document.body.textContent = e.message;
+      }
+    });
+
+    // ---------- INSTALAR COMO APP ----------
+    let instalarEvento = null;
+    window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); instalarEvento = e; if (perfilActual) $("btn-instalar").hidden = false; });
+    window.addEventListener("appinstalled", () => { $("btn-instalar").hidden = true; toast("WorkPulse quedó instalada como app."); });
+    $("btn-instalar").addEventListener("click", async () => {
+      if (!instalarEvento) return;
+      instalarEvento.prompt();
+      try { await instalarEvento.userChoice; } catch (e) {}
+      instalarEvento = null; $("btn-instalar").hidden = true;
+    });
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch((e) => console.warn("[App]", e)); });
     }
 
     // ---------- MODO TV ----------
