@@ -191,6 +191,9 @@
     .chip { font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
     .chip.admin { background: #fef3c7; color: #92400e; } .chip.sup { background: #e0f2fe; color: #075985; }
     .chip.off { background: #fee2e2; color: #991b1b; }
+    .chip.con { background: #ede9fe; color: #5b21b6; }
+    .usuario-box .rol.con { background: #ede9fe; color: #5b21b6; }
+    body:not(.es-admin) .solo-admin { display: none !important; }
     @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } .grid-6m { grid-template-columns: repeat(2, 1fr); }
                                 .usuario-box { justify-content: flex-start; } }
 
@@ -275,7 +278,7 @@
         <button type="button" class="btn" data-abrir="SEKAIA" style="--c:#8b5cf6; --t:#8b5cf6; --f:#f5f3ff;">SekaIA</button>
         <button type="button" class="btn" data-abrir="T10FUGAS" style="--c:#d97706; --t:#d97706; --f:#fffbeb;">T10 Fugas</button>
         <button type="button" class="btn" data-abrir="TMTTO" style="--c:#2563eb; --t:#2563eb; --f:#eff6ff;">T/MTTO</button>
-        <button type="button" class="btn" data-abrir="KPI" style="--c:#009B4A;">KPI</button>
+        <button type="button" class="btn" data-modulo="KPI" style="--c:#009B4A;">KPI</button>
         <button type="button" class="btn" data-abrir="HISTORIAL" style="--c:#84cc16;">Historial</button>
         <button type="button" class="btn" data-abrir="MRO" style="--c:#f59e0b;">Progreso MRO</button>
         <button type="button" class="btn" data-abrir="OMRO" style="--c:#3b82f6;">O/MRO</button>
@@ -370,9 +373,9 @@
               <label class="campo">Usuario <input id="cr-usuario" autocapitalize="none" spellcheck="false" maxlength="30"></label>
               <label class="campo">Contraseña <input id="cr-pass" type="text" autocomplete="off"><small>Mínimo 6 caracteres. Compártela con la persona.</small></label>
               <label class="campo">Rol
-                <select id="cr-rol"><option value="SUPERVISOR">SUPERVISOR (solo sus líneas)</option><option value="ADMIN">ADMIN (todo el panorama)</option></select>
+                <select id="cr-rol"><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="CONSULTA">CONSULTA (ve todo, no captura)</option><option value="ADMIN">ADMIN (todo el panorama)</option></select>
               </label>
-              <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. Un ADMIN puede dejarlo vacío.</small></label>
+              <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. ADMIN y CONSULTA pueden dejarlo vacío.</small></label>
               <button type="submit" class="btn-prim" id="btn-crear">Crear usuario</button>
               <p class="login-msg" id="cr-msg"></p>
             </form>
@@ -470,6 +473,375 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+  <!-- Pantallas de módulos: el mismo generador del sistema original, alimentado desde Firebase -->
+  <script>
+    window.WP_MODULOS_HTML = {};
+window.WP_MODULOS_HTML.kpi = function (res) {
+  var JS_OPEN = "<sc" + "ript>";
+  var JS_CLOSE = "</sc" + "ript>";
+  var JS_ECHARTS = "<sc" + "ript src='https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js'></sc" + "ript>";
+            let oee = res.oee || {}; let machineList = res.machineList || []; let sc = res.scheduleCompliance || { pct: 0, cerrados: 0, total: 0 };
+            let initialServerNowTs = res.serverNowTs || Date.now(); let clientLoadTs = Date.now(); let clockDelta = initialServerNowTs - clientLoadTs;
+
+            // --- MATEMÁTICAS INICIALES DE LA CALCULADORA OEE AUTÓNOMA ---
+            let o_plan = oee.plannedHours !== undefined ? parseFloat(oee.plannedHours) : 168;
+            let o_perd = oee.lostHours !== undefined ? parseFloat(oee.lostHours) : 16;
+            let o_targ = oee.targetUnits !== undefined ? parseFloat(oee.targetUnits) : 10000;
+            let o_real = oee.realUnits !== undefined ? parseFloat(oee.realUnits) : 9500;
+            let o_good = oee.goodUnits !== undefined ? parseFloat(oee.goodUnits) : 9450;
+            let o_bad  = oee.badUnits !== undefined ? parseFloat(oee.badUnits) : 50;
+
+            let vA = o_plan > 0 ? (o_plan - o_perd) / o_plan : 0;
+            let vP = (o_targ > 0 && vA > 0) ? o_real / (o_targ * vA) : 0;
+            let vQ = o_real > 0 ? o_good / o_real : 0;
+
+            let pctA = (vA * 100).toFixed(1);
+            let pctP = (vP * 100).toFixed(1);
+            let pctQ = (vQ * 100).toFixed(1);
+            let initialOeeCalc = (vA * vP * vQ * 100).toFixed(1);
+
+            let html = "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Maintenance KPI Dashboard</title>";
+            html += "<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap' rel='stylesheet'>";
+            html += JS_ECHARTS;
+            html += "<style>body { font-family: 'Inter', Arial, sans-serif; background: #ffffff; padding: 20px; color: #0f172a; margin: 0; } .kpi-container { max-width: 1700px; margin: 0 auto; } .top-header { display: flex; justify-content: space-between; align-items: center; border-top: 6px solid #009B4A; background: #fff; padding: 15px 30px; margin-bottom: 25px; border-bottom: 2px solid #009B4A; box-shadow: 0 4px 6px rgba(0,0,0,0.03); } .header-left { display: flex; align-items: center; gap: 20px; } .header-left img { height: 48px; width: auto; object-fit: contain; } .header-left h1 { margin: 0; color: #009B4A; font-size: 26px; font-weight: 900; text-transform: uppercase; line-height: 1; } .header-right { display: flex; align-items: center; gap: 15px; } .global-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 35px; } .kpi-card { background: #fff; border: 2px solid #009B4A; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position:relative; } .card-header { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px; } .card-title { color: #009B4A; font-weight: 900; font-size: 24px; margin: 0; line-height: 1; text-transform: uppercase; } .card-sub { color: #64748b; font-size: 11px; text-transform: uppercase; margin: 5px 0 0 0; font-weight: bold; } .gauge-box { height: 250px; width: 100%; margin-top: 5px; } .footer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid #e2e8f0; padding-top: 12px; text-align: center; margin-top: auto; } .footer-item { border-right: 1px solid #e2e8f0; padding: 0 5px; } .footer-item:last-child { border-right: none; } .footer-lbl { font-size: 11px; color: #64748b; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;} .footer-val { font-size: 14px; font-weight: 900; color: #0f172a; } .machine-section-header { background: #fff; color: #009B4A; text-align: center; padding: 14px; font-size: 24px; font-weight: 900; letter-spacing: 1px; margin-bottom: 30px; border-top: 4px solid #009B4A; border-bottom: 4px solid #009B4A; text-transform: uppercase;} .machine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; } .machine-card { background: #fff; border: 2px solid #009B4A; border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); position:relative; } .machine-card.active-open { border: 3px solid #dc2626 !important; background: #fff5f5; } .machine-title { background: #fff; color: #009B4A; text-align: center; padding: 12px; font-size: 16px; font-weight: 900; margin: 0; border-radius: 6px; text-transform: uppercase; border: 2px solid #009B4A;} .machine-card.active-open .machine-title { color: #dc2626; border-color: #dc2626; background: #fee2e2; } .machine-gauges { display: flex; justify-content: space-around; gap: 20px; } .small-card { flex: 1; border: 2px solid #cbd5e1; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; background: #fff; } .small-gauge-box { height: 190px; width: 100%; margin-top: 0px; } .badge-timer-red { background: #dc2626; color: #ffffff; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-family: 'Courier New', monospace; font-size: 13px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(220,38,38,0.3); border: 1px solid #991b1b; display: inline-block; width: 100%; text-align: center; margin-bottom: 12px; box-sizing:border-box; } .badge-timer-green { background: #009B4A; color: #ffffff; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-family: 'Courier New', monospace; font-size: 13px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,155,74,0.3); border: 1px solid #007b3a; display: inline-block; width: 100%; text-align: center; margin-bottom: 12px; box-sizing:border-box; } .badge-timer-white { background: #ffffff; color: #0f172a; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid #cbd5e1; display: inline-block; width: 100%; text-align: center; margin-bottom: 12px; box-sizing:border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-transform: none; } .btn-update-oee { background: #009B4A; color: white; border: none; padding: 5px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; margin-top: 5px; transition: 0.2s; } .btn-update-oee:hover { background: #007b3a; } .oee-modal-box { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; } .oee-modal-card { background:#fff; padding:25px; border-radius:8px; width:100%; max-width:400px; border:2px solid #009B4A; box-shadow:0 4px 15px rgba(0,0,0,0.2); } .oee-modal-card h3 { color:#009B4A; margin-bottom:15px; border-bottom:2px solid #009B4A; padding-bottom:5px; text-transform:uppercase; font-size:16px; } .oee-form-group { margin-bottom:12px; text-align:left; } .oee-form-group label { display:block; font-size:12px; font-weight:bold; margin-bottom:4px; color:#334155; } .oee-form-group input { width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:13px; }</style>";
+            html += "</head><body><div class='kpi-container'>";
+
+            // --- VENTANA MODAL (CALCULADORA OEE) ---
+            html += "<div id='oee_modal_window' class='oee-modal-box'><div class='oee-modal-card'><h3>PARÁMETROS DE OEE</h3>";
+            html += "<div class='oee-form-group'><label>Tiempo Planificado (Horas):</label><input type='number' id='oee_plan' value='" + o_plan + "'></div>";
+            html += "<div class='oee-form-group'><label>Tiempo Perdido (Horas):</label><input type='number' id='oee_perdido' value='" + o_perd + "'></div>";
+            html += "<div class='oee-form-group'><label>Producción Planificada (Target):</label><input type='number' id='oee_target' value='" + o_targ + "'></div>";
+            html += "<div class='oee-form-group'><label>Producción Real:</label><input type='number' id='oee_real' value='" + o_real + "'></div>";
+            html += "<div class='oee-form-group'><label>Piezas Buenas:</label><input type='number' id='oee_good' value='" + o_good + "'></div>";
+            html += "<div class='oee-form-group'><label>Piezas Malas:</label><input type='number' id='oee_bad' value='" + o_bad + "'></div>";
+            html += "<button class='btn-update-oee' style='width:100%; padding:10px; font-size:13px; margin-top:10px;' onclick='submitOEEUpdate()'>GUARDAR PARÁMETROS OEE</button>";
+            html += "<button class='btn-update-oee' style='width:100%; padding:8px; font-size:12px; margin-top:8px; background:#64748b;' onclick=\"document.getElementById('oee_modal_window').style.display='none'\">CANCELAR</button>";
+            html += "</div></div>";
+
+            // --- ENCABEZADO ESTANDARIZADO ---
+            html += "<div class='top-header' style='display:flex; justify-content:space-between; align-items:center; width:100%; padding:12px 25px; background:#ffffff; border-top:6px solid #009B4A; border-bottom:2px solid #009B4A; box-sizing:border-box; gap:15px; margin-bottom:25px;'>" +
+                    "  <div class='header-left' style='display:flex; align-items:center; gap:15px;'>" +
+                    "    <img src='https://www.nidec.com/files/user/www-nidec-com/corporate/about/slogan/img/img_slogan_01.png' alt='Nidec Logo' style='height:48px; width:auto; object-fit:contain;'>" +
+                    "    <div>" +
+                    "      <h1 style='font-size:24px; text-transform:uppercase; margin:0; font-weight:900; color:#009B4A; line-height:1;'>INDICADORES CLAVE DE DESEMPEÑO GLOBAL</h1>" +
+                    "      <div style='display:flex; align-items:center; gap:8px; margin-top:5px; font-size:12px; font-weight:700; color:#64748b;'>" +
+                    "        <span style='text-transform:uppercase;'>MÉTRICAS EN TIEMPO REAL</span>" +
+                    "        <span style='color:#cbd5e1;'>|</span>" +
+                    "        <span id='header_live_clock'>Cargando fecha...</span>" +
+                    "        <span style='color:#cbd5e1;'>|</span>" +
+                    "        <span>Nidec ACIM Reynosa</span>" +
+                    "      </div>" +
+                    "    </div>" +
+                    "  </div>" +
+                    "  <div class='header-right' style='display:flex; flex-direction:column; align-items:flex-end; text-align:right; flex-shrink:0;'>" +
+                    "    <div style='color:#009B4A; font-size:24px; font-weight:900; letter-spacing:0.5px; line-height:1; text-transform:uppercase;'>WORKPULSE</div>" +
+                    "    <div style='color:#64748b; font-size:11px; font-weight:700; margin-top:4px;'>AI Manufacturing Management System</div>" +
+                    "  </div>" +
+                    "</div>";
+
+            let cRojo = '#E53935'; let cAma = '#FFC000'; let cVer = '#009B4A';
+
+            html += "<div class='global-grid'>";
+
+            // --- MTTR GLOBAL ---
+            html += "<div class='kpi-card'>";
+            html += "  <div class='card-header' style='justify-content:space-between;'><div><h2 class='card-title'>MTTR GLOBAL</h2><p class='card-sub'>TIEMPO MEDIO DE REPARACIÓN</p></div><div style='text-align:center;'><div id='val_failures_mttr' style='color:#dc2626; font-size:24px; font-weight:900; line-height:1;'>0</div><div style='color:#64748b; font-size:10px; font-weight:bold; text-transform:uppercase;'>GLOBAL DE FALLAS</div></div></div>";
+            html += "  <div id='global_timer_1' class='badge-timer-white'>Cargando hora...</div><div class='gauge-box' id='g_mttr'></div>";
+            html += "  <div style='text-align:center; font-size:42px; font-weight:900; line-height:1; margin-top:-20px; margin-bottom:15px;'><span id='val_mttr_global'>0m 00s</span></div>";
+            html += "  <div style='height:54px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; margin-bottom:10px;'><div id='val_total_hrs_mttr' style='color:#dc2626; font-size:18px; font-weight:900; line-height:1.2;'>0 hrs</div><div style='color:#dc2626; font-size:10px; font-weight:bold; text-transform:uppercase;'>TIEMPO GLOBAL DE PARO</div></div>";
+            html += "  <div class='footer-grid'><div class='footer-item'><div class='footer-lbl'>META</div><div class='footer-val'>≤ 300 min</div></div><div class='footer-item'><div class='footer-lbl'>ESTADO</div><div id='icon_mttr_global'></div></div><div class='footer-item'><div class='footer-lbl'>Vs. META</div><div id='txt_mttr_global' class='footer-val'>0% Mejor</div></div></div>";
+            html += "</div>";
+
+            // --- OEE GLOBAL ---
+            html += "<div class='kpi-card'>";
+            html += "  <div class='card-header' style='justify-content:space-between;'><div><h2 class='card-title'>OEE GLOBAL</h2><p class='card-sub'>EFICIENCIA GENERAL DEL EQUIPO</p></div><button class='btn-update-oee' onclick=\"document.getElementById('oee_modal_window').style.display='flex'\">ACTUALIZAR</button></div>";
+            html += "  <div id='global_timer_2' class='badge-timer-white'>Cargando hora...</div><div class='gauge-box' id='g_oee'></div>";
+            html += "  <div style='text-align:center; font-size:42px; font-weight:900; line-height:1; margin-top:-20px; margin-bottom:15px;'><span id='val_oee_global'>" + initialOeeCalc + "</span><span style='font-size:32px;'>%</span></div>";
+            html += "  <div style='display:flex; justify-content:space-around; align-items:center; width:100%; height:54px; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; margin-bottom:10px;'>";
+            html += "    <div style='flex:1; text-align:center;'><div style='font-size:10px; font-weight:bold; color:#1e3a8a; text-transform:uppercase;'>QUALITY</div><div id='val_q' style='font-size:18px; font-weight:900; color:" + (pctQ >= 85 ? '#009B4A' : '#dc2626') + ";'>" + pctQ + "%</div></div>";
+            html += "    <div style='flex:1; text-align:center; border-left:1px solid #e2e8f0; border-right:1px solid #e2e8f0;'><div style='font-size:10px; font-weight:bold; color:#1e3a8a; text-transform:uppercase;'>PERFORMANCE</div><div id='val_p' style='font-size:18px; font-weight:900; color:" + (pctP >= 85 ? '#009B4A' : '#dc2626') + ";'>" + pctP + "%</div></div>";
+            html += "    <div style='flex:1; text-align:center;'><div style='font-size:10px; font-weight:bold; color:#1e3a8a; text-transform:uppercase;'>AVAILABILITY</div><div id='val_a' style='font-size:18px; font-weight:900; color:" + (pctA >= 85 ? '#009B4A' : '#dc2626') + ";'>" + pctA + "%</div></div>";
+            html += "  </div>";
+            html += "  <div class='footer-grid'><div class='footer-item'><div class='footer-lbl'>META</div><div class='footer-val'>≥ 85%</div></div><div class='footer-item'><div class='footer-lbl'>ESTADO</div><div id='icon_oee_global'></div></div><div class='footer-item'><div class='footer-lbl'>Vs. META</div><div id='txt_oee_global' class='footer-val'>0 pts Sobre Meta</div></div></div>";
+            html += "</div>";
+
+            // --- MTBF GLOBAL ---
+            html += "<div class='kpi-card'>";
+            html += "  <div class='card-header' style='justify-content:space-between;'><div><h2 class='card-title'>MTBF GLOBAL</h2><p class='card-sub'>TIEMPO MEDIO ENTRE FALLAS</p></div><div style='text-align:center;'><div id='val_failures_mtbf' style='color:#009B4A; font-size:24px; font-weight:900; line-height:1;'>0</div><div style='color:#64748b; font-size:10px; font-weight:bold; text-transform:uppercase;'>GLOBAL DE FALLAS</div></div></div>";
+            html += "  <div id='global_timer_3' class='badge-timer-white'>Cargando hora...</div><div class='gauge-box' id='g_mtbf'></div>";
+            html += "  <div style='text-align:center; font-size:42px; font-weight:900; line-height:1; margin-top:-20px; margin-bottom:15px;'><span id='val_mtbf_global'>0m 00s</span></div>";
+            html += "  <div style='height:54px; display:flex; flex-direction:column; justify-content:center; align-items:center; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; margin-bottom:10px;'><div id='val_total_hrs_mtbf' style='color:#009B4A; font-size:18px; font-weight:900; line-height:1.2;'>0 hrs</div><div style='color:#009B4A; font-size:10px; font-weight:bold; text-transform:uppercase;'>TIEMPO GLOBAL DE OPERACIÓN</div></div>";
+            html += "  <div class='footer-grid'><div class='footer-item'><div class='footer-lbl'>META</div><div class='footer-val'>≥ 1200 hrs</div></div><div class='footer-item'><div class='footer-lbl'>ESTADO</div><div id='icon_mtbf_global'></div></div><div class='footer-item'><div class='footer-lbl'>Vs. META</div><div id='txt_mtbf_global' class='footer-val'>0 hrs</div></div></div>";
+            html += "</div>";
+
+            // --- CUMPLIMIENTO ---
+            let vSc = parseFloat(sc.pct) || 0; let scDiff = (vSc - 85).toFixed(1); let scOk = vSc >= 85; let scColor = scOk ? cVer : (vSc >= 50 ? cAma : cRojo); let scMetaTxt = scDiff >= 0 ? '+' + scDiff + ' Pts' : Math.abs(scDiff) + ' Pts Bajo Meta'; 
+            html += "<div class='kpi-card'>";
+            html += "  <div class='card-header'><div><h2 class='card-title'>CUMPLIMIENTO</h2><p class='card-sub'>MANTENIMIENTO PROGRAMADO</p></div></div>";
+            html += "  <div id='global_timer_4' class='badge-timer-white'>Cargando hora...</div><div class='gauge-box' id='g_sc'></div>";
+            html += "  <div style='text-align:center; font-size:42px; font-weight:900; line-height:1; margin-top:-20px; margin-bottom:15px; color:" + scColor + ";'>" + vSc + "<span style='font-size:32px;'>%</span></div>";
+            html += "  <div style='height:54px; display:flex; justify-content:center; align-items:center; margin-bottom:10px;'><div style='font-size:14px; font-weight:bold; color:#64748b;'>Total Tareas: " + sc.total + " / Cumplidas: " + sc.cerrados + "</div></div>";
+            html += "  <div class='footer-grid'><div class='footer-item'><div class='footer-lbl'>META</div><div class='footer-val'>≥ 85%</div></div><div class='footer-item'><div class='footer-lbl'>ESTADO</div><div style='color:" + scColor + "; font-size:22px; font-weight:bold;'>" + (scOk?"&#10004;":"&#10006;") + "</div></div><div class='footer-item'><div class='footer-lbl'>Vs. META</div><div class='footer-val' style='color:" + scColor + ";'>" + scMetaTxt + "</div></div></div>";
+            html += "</div>";
+
+            html += "</div>";
+
+            html += "<div class='machine-section-header'>INDICADORES CLAVE DE DESEMPEÑO POR EQUIPO (MONITOREO EN VIVO)</div>";
+            html += "<div class='machine-grid'>";
+
+            for(let i=0; i<machineList.length; i++) {
+                let m = machineList[i];
+                let mTitle = String(m.idMaq || "EQUIPO").toUpperCase() + " - LÍNEA " + String(m.linea || "N/A").toUpperCase() + " - " + String(m.idMaquina || "N/A").toUpperCase();
+                let isActive = !!m.hasActiveOpen; let hF = m.historicalFailures || 0; let hD = m.historicalDowntimeMins || 0;
+
+                let timerBadge = isActive 
+                    ? "<div class='badge-timer-red' id='timer_badge_" + i + "'>TIEMPO EN REPARACIÓN (MTTR): ...</div>" 
+                    : "<div class='badge-timer-green' id='timer_badge_" + i + "'>TIEMPO ABIERTO EN OPERACIÓN (MTBF): ...</div>";
+
+                let fallasBadge = isActive
+                    ? "<span style='background:#fee2e2; color:#dc2626; padding:6px 12px; border-radius:6px; font-weight:900; font-size:12px; margin-left:10px; white-space:nowrap; border:2px solid #dc2626;'>FALLAS: <span style='font-size:14px;' id='m_score_" + i + "'>" + hF + "</span></span>"
+                    : "<span style='background:#dcfce7; color:#009B4A; padding:6px 12px; border-radius:6px; font-weight:900; font-size:12px; margin-left:10px; white-space:nowrap; border:2px solid #009B4A;'>FALLAS: <span style='font-size:14px;' id='m_score_" + i + "'>" + hF + "</span></span>";
+
+                html += "<div class='machine-card " + (isActive ? "active-open" : "") + "' id='m_card_" + i + "' data-hf='" + hF + "' data-hd='" + hD + "' data-active='" + isActive + "' data-openstart='" + (m.openStartTs || 0) + "' data-lastclose='" + (m.lastCloseTs || 0) + "' data-first='" + (m.firstEventTs || 0) + "'>";
+
+                html += "<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;'>";
+                html += "<h3 class='machine-title' id='m_title_" + i + "' style='flex:1;'>" + mTitle + " " + (isActive ? "(EN REPARACIÓN)" : "(OPERANDO)") + "</h3>";
+                html += fallasBadge;
+                html += "</div>";
+
+                html += timerBadge;
+                html += "<div class='machine-gauges'>";
+
+                html += "<div class='small-card'><div class='card-header' style='padding-bottom:5px; margin-bottom:5px; border-bottom:1px solid #e2e8f0;'><div><h2 class='card-title' style='font-size:18px;'>MTTR</h2><p class='card-sub' style='font-size:9px;'>TIEMPO MEDIO DE REPARACIÓN</p></div></div><div class='small-gauge-box' id='m_mttr_" + i + "'></div><div style='text-align:center; font-size:22px; font-weight:900; line-height:1.1; margin-top:-10px; margin-bottom:5px; min-height:42px; display:flex; align-items:center; justify-content:center;' id='col_mttr_" + i + "'><span id='val_m_mttr_" + i + "'>00m 00s</span></div><div style='text-align:center; font-size:10px; font-weight:bold; color:#009B4A; background:#f0fdf4; padding:4px; border-radius:4px; margin-bottom:8px;' id='last_mttr_txt_" + i + "'>Último MTTR: 00m 00s</div><div class='footer-grid'><div class='footer-item'><div class='footer-lbl'>META</div><div class='footer-val' style='font-size:12px;'>≤ 300 min</div></div><div class='footer-item'><div class='footer-lbl'>ESTADO</div><div id='ico_mttr_" + i + "'></div></div><div class='footer-item'><div class='footer-lbl'>Vs. META</div><div id='txt_mttr_" + i + "' class='footer-val' style='font-size:11px;'></div></div></div></div>";
+
+                html += "<div class='small-card'><div class='card-header' style='padding-bottom:5px; margin-bottom:5px; border-bottom:1px solid #e2e8f0;'><div><h2 class='card-title' style='font-size:18px;'>MTBF</h2><p class='card-sub' style='font-size:9px;'>TIEMPO MEDIO ENTRE FALLAS</p></div></div><div class='small-gauge-box' id='m_mtbf_" + i + "'></div><div style='text-align:center; font-size:22px; font-weight:900; line-height:1.1; margin-top:-10px; margin-bottom:5px; min-height:42px; display:flex; align-items:center; justify-content:center;' id='col_mtbf_" + i + "'><span id='val_m_mtbf_" + i + "'>00m 00s</span></div><div style='text-align:center; font-size:10px; font-weight:bold; color:#3b82f6; background:#eff6ff; padding:4px; border-radius:4px; margin-bottom:8px;' id='last_mtbf_txt_" + i + "'>MTBF Activo</div><div class='footer-grid'><div class='footer-item'><div class='footer-lbl'>META</div><div class='footer-val' style='font-size:12px;'>≥ 1200 hrs</div></div><div class='footer-item'><div class='footer-lbl'>ESTADO</div><div id='ico_mtbf_" + i + "'></div></div><div class='footer-item'><div class='footer-lbl'>Vs. META</div><div id='txt_mtbf_" + i + "' class='footer-val' style='font-size:11px;'></div></div></div></div>";
+
+                html += "</div></div>";
+            }
+            html += "</div></div>"; 
+
+            html += JS_OPEN;
+            html += "var clockDelta = " + clockDelta + ";";
+            html += "var gaugeInstances = {};";
+
+            // --- CÁLCULO EN TIEMPO REAL DESDE LA VENTANA MODAL (OEE) ---
+            html += "var globalOeeCalc = " + initialOeeCalc + ";";
+            html += "function submitOEEUpdate() {";
+            html += "  var p_plan = parseFloat(document.getElementById('oee_plan').value) || 0;";
+            html += "  var p_perd = parseFloat(document.getElementById('oee_perdido').value) || 0;";
+            html += "  var p_targ = parseFloat(document.getElementById('oee_target').value) || 0;";
+            html += "  var p_real = parseFloat(document.getElementById('oee_real').value) || 0;";
+            html += "  var p_good = parseFloat(document.getElementById('oee_good').value) || 0;";
+            html += "  var p_bad  = parseFloat(document.getElementById('oee_bad').value) || 0;";
+
+            html += "  var vA = p_plan > 0 ? (p_plan - p_perd) / p_plan : 0;";
+            html += "  var vP = (p_targ > 0 && vA > 0) ? p_real / (p_targ * vA) : 0;";
+            html += "  var vQ = p_real > 0 ? p_good / p_real : 0;";
+
+            html += "  var pctA = (vA * 100).toFixed(1);";
+            html += "  var pctP = (vP * 100).toFixed(1);";
+            html += "  var pctQ = (vQ * 100).toFixed(1);";
+            html += "  globalOeeCalc = (vA * vP * vQ * 100).toFixed(1);";
+
+            html += "  document.getElementById('val_a').innerText = pctA + '%';";
+            html += "  document.getElementById('val_p').innerText = pctP + '%';";
+            html += "  document.getElementById('val_q').innerText = pctQ + '%';";
+            html += "  document.getElementById('val_a').style.color = pctA >= 85 ? '#009B4A' : '#dc2626';";
+            html += "  document.getElementById('val_p').style.color = pctP >= 85 ? '#009B4A' : '#dc2626';";
+            html += "  document.getElementById('val_q').style.color = pctQ >= 85 ? '#009B4A' : '#dc2626';";
+
+            html += "  document.getElementById('oee_modal_window').style.display='none';";
+
+            html += "  var d = { plannedHours: p_plan, lostHours: p_perd, targetUnits: p_targ, realUnits: p_real, goodUnits: p_good, badUnits: p_bad };";
+            html += "  if (window.opener && window.opener.guardarOEEServidorBridge) {";
+            html += "    window.opener.guardarOEEServidorBridge(d, function(res) {});"; 
+            html += "  }";
+            html += "}";
+
+            html += "function drawPerfectGauge(id, val, min, max, seg1, seg2, seg3, col1, col2, col3, isSmall) {";
+            html += "  var dom = document.getElementById(id); if(!dom) return;";
+            html += "  var myChart = echarts.getInstanceByDom(dom) || echarts.init(dom);";
+            html += "  var option = { series: [ { type: 'gauge', z: 1, startAngle: 180, endAngle: 0, min: min, max: max, radius: isSmall ? '78%' : '80%', center: ['50%', '75%'], axisLine: { lineStyle: { width: isSmall ? 18 : 24, color: [[ (seg1-min)/(max-min), col1 ], [ (seg2-min)/(max-min), col2 ], [ 1, col3 ]] } }, splitLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, pointer: { show: false }, detail: { show: false } }, { type: 'gauge', z: 10, startAngle: 180, endAngle: 0, min: min, max: max, radius: isSmall ? '88%' : '90%', center: ['50%', '75%'], splitNumber: 5, axisLine: { lineStyle: { width: 3, color: [[1, '#64748b']] } }, splitLine: { show: true, length: 8, distance: 0, lineStyle: { color: '#334155', width: 2 } }, axisTick: { show: true, splitNumber: 2, length: 5, distance: 0, lineStyle: { color: '#64748b', width: 1.5 } }, axisLabel: { show: true, distance: isSmall ? -28 : -32, color: '#0f172a', fontSize: isSmall ? 10 : 12, fontWeight: 'bold' }, pointer: { show: true, length: '82%', width: isSmall ? 5 : 7, offsetCenter: [0, '0%'], itemStyle: { color: '#2c3e50', shadowColor: 'rgba(0,0,0,0.3)', shadowBlur: 4, shadowOffsetY: 2 } }, anchor: { show: true, showAbove: true, size: isSmall ? 12 : 15, itemStyle: { color: '#2c3e50', borderWidth: 3, borderColor: '#ffffff', shadowColor: 'rgba(0,0,0,0.3)', shadowBlur: 3 } }, detail: { show: false }, data: [{ value: val }] } ] };";
+            html += "  myChart.setOption(option); gaugeInstances[id] = myChart;";
+            html += "}";
+
+            html += "window.addEventListener('resize', function() { Object.values(gaugeInstances).forEach(function(c) { c.resize(); }); });";
+
+            html += "window.onload = function() {";
+            html += "  drawPerfectGauge('g_mttr', 0, 0, 2000, 300, 900, 2000, '#009B4A', '#FFC000', '#E53935', false);";
+            html += "  drawPerfectGauge('g_oee', 0, 0, 100, 65, 85, 100, '#E53935', '#FFC000', '#009B4A', false);";
+            html += "  drawPerfectGauge('g_mtbf', 0, 0, 6000, 600, 1200, 6000, '#E53935', '#FFC000', '#009B4A', false);";
+            html += "  drawPerfectGauge('g_sc', " + vSc + ", 0, 100, 60, 85, 100, '#E53935', '#FFC000', '#009B4A', false);";
+            for(let i=0; i<machineList.length; i++) {
+                html += "  drawPerfectGauge('m_mttr_" + i + "', 0, 0, 2000, 300, 900, 2000, '#009B4A', '#FFC000', '#E53935', true);";
+                html += "  drawPerfectGauge('m_mtbf_" + i + "', 0, 0, 6000, 600, 1200, 6000, '#E53935', '#FFC000', '#009B4A', true);";
+            }
+
+            // CICLO DINÁMICO CADA SEGUNDO
+            html += "  setInterval(function() {";
+            html += "    let now = Date.now() + clockDelta;";
+            html += "    let nowObj = new Date(now);";
+            html += "    let days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];";
+            html += "    let months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];";
+            html += "    let hStr = nowObj.getHours().toString().padStart(2, '0'); let mStr = nowObj.getMinutes().toString().padStart(2, '0'); let sStr = nowObj.getSeconds().toString().padStart(2, '0');";
+            html += "    let exactDate = days[nowObj.getDay()] + ', ' + nowObj.getDate() + ' de ' + months[nowObj.getMonth()] + ' de ' + nowObj.getFullYear() + ', ' + hStr + ':' + mStr + ':' + sStr;";
+
+            // ACTUALIZA EL RELOJ EN LA CABECERA Y EN LAS TARJETAS
+            html += "    let headerClock = document.getElementById('header_live_clock'); if(headerClock){ headerClock.innerHTML = exactDate; }";
+            html += "    ['1','2','3','4'].forEach(function(id) { let el = document.getElementById('global_timer_' + id); if(el){ el.innerHTML = exactDate; } });";
+
+            html += "    let machineCards = document.querySelectorAll('.machine-card');";
+            html += "    let totalGlobalDowntimeSecs = 0;";
+            html += "    let totalGlobalUptimeSecs = 0;";
+            html += "    let totalGlobalFailures = 0;";
+
+            html += "    for(let i=0; i<machineCards.length; i++) {";
+            html += "      let card = machineCards[i];";
+            html += "      let hF = parseInt(card.getAttribute('data-hf')) || 0;";
+            html += "      let hD_mins = parseFloat(card.getAttribute('data-hd')) || 0;";
+            html += "      let isActive = card.getAttribute('data-active') === 'true';";
+            html += "      let openStart = parseInt(card.getAttribute('data-openstart')) || 0;";
+            html += "      let lastClose = parseInt(card.getAttribute('data-lastclose')) || now;";
+            html += "      let firstEvent = parseInt(card.getAttribute('data-first')) || now;";
+            html += "      let badge = document.getElementById('timer_badge_' + i);";
+            html += "      let lastMttrTxt = document.getElementById('last_mttr_txt_' + i);";
+            html += "      let lastMtbfTxt = document.getElementById('last_mtbf_txt_' + i);";
+            html += "      let valMttrElem = document.getElementById('val_m_mttr_' + i);";
+            html += "      let valMtbfElem = document.getElementById('val_m_mtbf_' + i);";
+
+            html += "      let lifespanSecs = Math.max(1, Math.floor((now - firstEvent) / 1000));";
+            html += "      let currentDowntimeSecs = Math.floor(hD_mins * 60);";
+            html += "      let currentFailures = hF;";
+
+            html += "      if (isActive) {";
+            html += "        if (openStart > 0) {";
+            html += "          let activeDiffMs = Math.max(0, now - openStart);";
+            html += "          let activeSecs = Math.floor(activeDiffMs / 1000);";
+            html += "          currentDowntimeSecs += activeSecs;";
+            html += "          let d_r = Math.floor(activeDiffMs / 86400000); let h_r = Math.floor((activeDiffMs % 86400000) / 3600000); let m_r = Math.floor((activeDiffMs % 3600000) / 60000); let s_r = Math.floor((activeDiffMs % 60000) / 1000);";
+            html += "          let mttrLiveBadgeStr = (d_r>0?d_r+'d ':'') + (h_r<10?'0'+h_r:h_r) + 'h ' + (m_r<10?'0'+m_r:m_r) + 'm ' + (s_r<10?'0'+s_r:s_r) + 's';";
+            html += "          if (badge) badge.innerHTML = 'TIEMPO EN REPARACIÓN (MTTR): ' + mttrLiveBadgeStr;";
+
+            html += "          let frozenOpMs = (openStart > lastClose) ? Math.max(0, openStart - lastClose) : 0;";
+            html += "          let d_b = Math.floor(frozenOpMs / 86400000); let h_b = Math.floor((frozenOpMs % 86400000) / 3600000); let m_b = Math.floor((frozenOpMs % 3600000) / 60000);";
+            html += "          if (lastMtbfTxt) { lastMtbfTxt.innerHTML = 'MTBF Pausado en: ' + (d_b>0?d_b+'d ':'') + h_b + 'h ' + m_b + 'm'; lastMtbfTxt.style.color='#64748b'; lastMtbfTxt.style.background='#f1f5f9'; }";
+            html += "        }";
+            html += "      } else {";
+            html += "        let opDiffMs = Math.max(0, now - lastClose);";
+            html += "        let d_b = Math.floor(opDiffMs / 86400000); let h_b = Math.floor((opDiffMs % 86400000) / 3600000); let m_b = Math.floor((opDiffMs % 3600000) / 60000); let s_b = Math.floor((opDiffMs % 60000) / 1000);";
+            html += "        let mtbfLiveStr = (d_b>0?d_b+'d ':'') + (h_b<10?'0'+h_b:h_b) + 'h ' + (m_b<10?'0'+m_b:m_b) + 'm ' + (s_b<10?'0'+s_b:s_b) + 's';";
+            html += "        if (badge) badge.innerHTML = 'TIEMPO ABIERTO EN OPERACIÓN (MTBF): ' + mtbfLiveStr;";
+            html += "        if (lastMtbfTxt) { lastMtbfTxt.innerHTML = 'MTBF Activo en Operación'; lastMtbfTxt.style.color='#3b82f6'; lastMtbfTxt.style.background='#eff6ff'; }";
+            html += "      }";
+
+            html += "      let currentUptimeSecs = Math.max(0, lifespanSecs - currentDowntimeSecs);";
+            html += "      let effFail = Math.max(1, currentFailures);";
+
+            html += "      let avgMttrSecs = Math.floor(currentDowntimeSecs / effFail);";
+            html += "      let mMttrMins = Math.floor(avgMttrSecs / 60); let mMttrSecs = avgMttrSecs % 60;";
+            html += "      let mMttrFormat = mMttrMins + 'm ' + (mMttrSecs<10?'0':'') + mMttrSecs + 's';";
+
+            html += "      let avgMtbfSecs = Math.floor(currentUptimeSecs / effFail);";
+            html += "      let mMtbfMins = Math.floor(avgMtbfSecs / 60); let mMtbfSecs = avgMtbfSecs % 60;";
+            html += "      let mMtbfFormat = mMtbfMins + 'm ' + (mMtbfSecs<10?'0':'') + mMtbfSecs + 's';";
+
+            html += "      if (isActive) {";
+            html += "        if (valMttrElem) { valMttrElem.innerHTML = mMttrFormat; valMttrElem.style.color='#dc2626'; }";
+            html += "        if (valMtbfElem) { valMtbfElem.innerHTML = mMtbfFormat; valMtbfElem.style.color='#64748b'; }";
+            html += "        if (lastMttrTxt) { lastMttrTxt.innerHTML = 'Reparación activa: ' + mMttrMins + 'm ' + (mMttrSecs<10?'0':'') + mMttrSecs + 's'; lastMttrTxt.style.color='#dc2626'; lastMttrTxt.style.background='#fef2f2'; }";
+            html += "      } else {";
+            html += "        if (valMtbfElem) { valMtbfElem.innerHTML = mMtbfFormat; valMtbfElem.style.color='#009B4A'; }";
+            html += "        if (valMttrElem) { valMttrElem.innerHTML = mMttrFormat; valMttrElem.style.color='#009B4A'; }";
+            html += "        if (lastMttrTxt) { lastMttrTxt.innerHTML = 'Último MTTR: ' + mMttrFormat; lastMttrTxt.style.color='#009B4A'; lastMttrTxt.style.background='#f0fdf4'; }";
+            html += "      }";
+
+            html += "      let currentDowntimeMins = currentDowntimeSecs / 60;";
+            html += "      let currentUptimeMins = currentUptimeSecs / 60;";
+            html += "      let currentMttrMins = Math.round(currentDowntimeMins / effFail);";
+            html += "      let currentMtbfHrs = Math.round((currentUptimeMins / 60) / effFail);";
+
+            html += "      totalGlobalDowntimeSecs += currentDowntimeSecs;";
+            html += "      totalGlobalUptimeSecs += currentUptimeSecs;";
+            html += "      totalGlobalFailures += currentFailures;";
+
+            html += "      let mttrColor = currentMttrMins <= 300 ? '#009B4A' : (currentMttrMins <= 900 ? '#FFC000' : '#E53935');";
+            html += "      let mtbfColor = currentMtbfHrs >= 1200 ? '#009B4A' : (currentMtbfHrs >= 600 ? '#FFC000' : '#E53935');";
+            html += "      let iconOk = \"<div style='color:#009B4A; font-size:22px; font-weight:bold;'>&#10004;</div>\"; let iconBad = \"<div style='color:#dc2626; font-size:22px; font-weight:bold;'>&#10006;</div>\";";
+
+            html += "      document.getElementById('col_mttr_' + i).style.color = mttrColor;";
+            html += "      document.getElementById('ico_mttr_' + i).innerHTML = currentMttrMins <= 300 ? iconOk : iconBad;";
+            html += "      document.getElementById('txt_mttr_' + i).innerHTML = currentMttrMins <= 300 ? Math.round(((300-currentMttrMins)/300)*100)+'% Mejor' : '+' + Math.round(((currentMttrMins-300)/300)*100)+'% Peor';";
+            html += "      document.getElementById('txt_mttr_' + i).style.color = mttrColor;";
+
+            html += "      document.getElementById('col_mtbf_' + i).style.color = mtbfColor;";
+            html += "      document.getElementById('ico_mtbf_' + i).innerHTML = currentMtbfHrs >= 1200 ? iconOk : iconBad;";
+            html += "      document.getElementById('txt_mtbf_' + i).innerHTML = currentMtbfHrs >= 1200 ? '+'+Math.floor(currentMtbfHrs-1200)+' hrs' : Math.floor(1200-currentMtbfHrs)+' hrs';";
+            html += "      document.getElementById('txt_mtbf_' + i).style.color = mtbfColor;";
+
+            html += "      if (gaugeInstances['m_mttr_' + i]) gaugeInstances['m_mttr_' + i].setOption({ series: [{}, { data: [{ value: currentMttrMins }] }] });";
+            html += "      if (gaugeInstances['m_mtbf_' + i]) gaugeInstances['m_mtbf_' + i].setOption({ series: [{}, { data: [{ value: currentMtbfHrs }] }] });";
+            html += "    }";
+
+            html += "    let globalFailures = Math.max(1, totalGlobalFailures);";
+
+            html += "    let globalAvgMttrSecs = Math.floor(totalGlobalDowntimeSecs / globalFailures);";
+            html += "    let globalMttrMins = Math.floor(globalAvgMttrSecs / 60); let globalMttrSecs = globalAvgMttrSecs % 60;";
+            html += "    let globalMttrStr = globalMttrMins + 'm ' + (globalMttrSecs < 10 ? '0' : '') + globalMttrSecs + 's';";
+
+            html += "    let globalAvgMtbfSecs = Math.floor(totalGlobalUptimeSecs / globalFailures);";
+            html += "    let globalMtbfMins = Math.floor(globalAvgMtbfSecs / 60); let globalMtbfSecs = globalAvgMtbfSecs % 60;";
+            html += "    let globalMtbfStr = globalMtbfMins + 'm ' + (globalMtbfSecs < 10 ? '0' : '') + globalMtbfSecs + 's';";
+
+            html += "    let totalDowntimeHrs = (totalGlobalDowntimeSecs / 3600).toFixed(1);";
+            html += "    let totalUptimeHrs = (totalGlobalUptimeSecs / 3600).toFixed(1);";
+
+            html += "    let globalMttrGaugeMins = Math.round(totalGlobalDowntimeSecs / 60 / globalFailures);";
+            html += "    let globalMtbfGaugeHrs = Math.round((totalGlobalUptimeSecs / 3600) / globalFailures);";
+
+            html += "    let globalOee = parseFloat(globalOeeCalc).toFixed(1);";
+
+            html += "    document.getElementById('val_failures_mttr').innerText = totalGlobalFailures;";
+            html += "    document.getElementById('val_failures_mtbf').innerText = totalGlobalFailures;";
+            html += "    document.getElementById('val_total_hrs_mttr').innerText = totalDowntimeHrs + ' hrs';";
+            html += "    document.getElementById('val_total_hrs_mtbf').innerText = totalUptimeHrs + ' hrs';";
+
+            let gMttrColor = "globalMttrGaugeMins <= 300 ? '#009B4A' : (globalMttrGaugeMins <= 900 ? '#FFC000' : '#dc2626')";
+            let gMtbfColor = "globalMtbfGaugeHrs >= 1200 ? '#009B4A' : (globalMtbfGaugeHrs >= 600 ? '#FFC000' : '#dc2626')";
+            let iconOk = "\"<div style='color:#009B4A; font-size:22px; font-weight:bold;'>&#10004;</div>\"";
+            let iconBad = "\"<div style='color:#dc2626; font-size:22px; font-weight:bold;'>&#10006;</div>\"";
+
+            html += "    document.getElementById('val_mttr_global').innerText = globalMttrStr;";
+            html += "    document.getElementById('val_mttr_global').parentElement.style.color = " + gMttrColor + ";";
+            html += "    document.getElementById('icon_mttr_global').innerHTML = globalMttrGaugeMins <= 300 ? " + iconOk + " : " + iconBad + ";";
+            html += "    document.getElementById('txt_mttr_global').innerHTML = globalMttrGaugeMins <= 300 ? Math.round(((300-globalMttrGaugeMins)/300)*100)+'% Mejor' : '+' + Math.round(((globalMttrGaugeMins-300)/300)*100)+'% Peor';";
+            html += "    document.getElementById('txt_mttr_global').style.color = " + gMttrColor + ";";
+
+            html += "    document.getElementById('val_mtbf_global').innerText = globalMtbfStr;";
+            html += "    document.getElementById('val_mtbf_global').parentElement.style.color = " + gMtbfColor + ";";
+            html += "    document.getElementById('icon_mtbf_global').innerHTML = globalMtbfGaugeHrs >= 1200 ? " + iconOk + " : " + iconBad + ";";
+            html += "    document.getElementById('txt_mtbf_global').innerHTML = globalMtbfGaugeHrs >= 1200 ? '+'+Math.floor(globalMtbfGaugeHrs-1200)+' hrs' : Math.floor(1200-globalMtbfGaugeHrs)+' hrs';";
+            html += "    document.getElementById('txt_mtbf_global').style.color = " + gMtbfColor + ";";
+
+            html += "    let gOeeColor = globalOee >= 85 ? '#009B4A' : (globalOee >= 65 ? '#FFC000' : '#dc2626');";
+            html += "    document.getElementById('val_oee_global').innerText = globalOee;";
+            html += "    document.getElementById('val_oee_global').parentElement.style.color = gOeeColor;";
+            html += "    document.getElementById('icon_oee_global').innerHTML = globalOee >= 85 ? " + iconOk + " : " + iconBad + ";";
+            html += "    document.getElementById('txt_oee_global').innerHTML = globalOee >= 85 ? '+'+(globalOee-85).toFixed(1)+' pts Sobre Meta' : Math.abs(globalOee-85).toFixed(1)+' pts Bajo Meta';";
+            html += "    document.getElementById('txt_oee_global').style.color = gOeeColor;";
+
+            html += "    if (gaugeInstances['g_mttr']) gaugeInstances['g_mttr'].setOption({ series: [{}, { data: [{ value: globalMttrGaugeMins }] }] });";
+            html += "    if (gaugeInstances['g_mtbf']) gaugeInstances['g_mtbf'].setOption({ series: [{}, { data: [{ value: globalMtbfGaugeHrs }] }] });";
+            html += "    if (gaugeInstances['g_oee']) gaugeInstances['g_oee'].setOption({ series: [{}, { data: [{ value: parseFloat(globalOee) }] }] });";
+
+            html += "  }, 1000);";
+            html += "};";
+            
+            html += JS_CLOSE;
+            html += "</body></html>";
+  return html;
+};
+
+  </script>
   <script type="module">
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
     import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where,
@@ -492,8 +864,6 @@
     const DOMINIO_USUARIOS = "@usuarios.workpulse.app";
     const MINUTOS_DATO_VIEJO = 15;
 
-    // Sistema completo en Apps Script (cuenta @nidec-ga.com). ?abrir=CLAVE abre ese módulo directo.
-    const URL_SISTEMA = "https://script.google.com/a/macros/nidec-ga.com/s/AKfycbyEASK4qasxRuua-jiq6DcHim_Kw4SOoptsTY-rtrGeooCQIsPAKVqSSV0aMZ2GfBEP/exec";
 
     // Reloj del encabezado: "jueves, 22 de octubre de 2026, 07:24 a.m."
     function pintarReloj() {
@@ -504,9 +874,82 @@
     pintarReloj();
     setInterval(pintarReloj, 1000);
 
+    // Los módulos del sistema completo se abren en sistema.html (mismo sistema, sin cuenta de Google)
     document.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => {
-      window.open(URL_SISTEMA + "?abrir=" + encodeURIComponent(b.dataset.abrir), "_blank", "noopener");
+      window.open("sistema.html?abrir=" + encodeURIComponent(b.dataset.abrir), "_blank");
     }));
+    // ---------- Módulos web (datos publicados por Apps Script en modulos/<id>) ----------
+    const MODULOS_WEB = {
+      KPI: { id: "kpi", titulo: "Indicadores KPI" }
+    };
+    const quitarPeligrosos = (v) => typeof v === "string" ? v.replace(/[<>`\\]/g, "")
+      : Array.isArray(v) ? v.map(quitarPeligrosos)
+      : (v && typeof v === "object") ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, quitarPeligrosos(x)])) : v;
+
+    function paginaAviso(win, titulo, texto, color) {
+      const d = win.document;
+      d.open();
+      d.write("<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>WorkPulse</title></head>" +
+              "<body style='font-family:Segoe UI,Arial,sans-serif;text-align:center;padding:20vh 16px 0;margin:0;'><h2></h2><p style='color:#64748b;font-weight:700;'></p></body></html>");
+      d.close();
+      d.querySelector("h2").textContent = titulo;
+      d.querySelector("h2").style.color = color || "#009B4A";
+      d.querySelector("p").textContent = texto || "";
+    }
+
+    async function abrirModuloWeb(clave) {
+      const m = MODULOS_WEB[clave];
+      if (!m) return;
+      const gen = window.WP_MODULOS_HTML && window.WP_MODULOS_HTML[m.id];
+      const win = window.open("", "_blank");          // se abre en el mismo toque para que no la bloquee el navegador
+      if (!win) { toast("El navegador bloqueó la ventana. Permite ventanas emergentes para esta página.", 6000); return; }
+      paginaAviso(win, "Cargando " + m.titulo, "AI Manufacturing Management System");
+      try {
+        if (typeof gen !== "function") throw new Error("Esta versión de la página no tiene la pantalla " + m.titulo + ".");
+        const snap = await getDoc(doc(db, "modulos", m.id));
+        if (!snap.exists()) throw new Error("Todavía no hay datos publicados. Espera unos minutos.");
+        const d = snap.data();
+        let res = null;
+        try { res = JSON.parse(d.datos || "null"); } catch (e) { res = null; }
+        if (!res || !res.success) throw new Error((res && res.errorServer) || "Los datos publicados vienen vacíos.");
+        res = quitarPeligrosos(res);
+        res.serverNowTs = Date.now();                   // los cronómetros corren con la hora de este dispositivo
+        let html = gen(res);
+        if (perfilActual?.rol !== "ADMIN") {             // solo un ADMIN cambia parámetros
+          html = html.replace(/<button class='btn-update-oee' onclick="document\.getElementById\('oee_modal_window'\)\.style\.display='flex'">[^<]*<\/button>/, "");
+        }
+        const t = d.actualizadoEn && typeof d.actualizadoEn.toDate === "function" ? d.actualizadoEn.toDate() : null;
+        const nota = "<div style='font-family:Segoe UI,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-align:right;max-width:1700px;margin:0 auto 6px;'>Datos publicados: " +
+                     (t ? t.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" }) : "—") + " · se actualizan cada 5 min</div>";
+        html = html.replace("<body>", "<body>" + nota);
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+      } catch (e) {
+        paginaAviso(win, "No se pudo abrir " + m.titulo, mensajeAuth(e) || e.message, "#dc2626");
+      }
+    }
+
+    // La pantalla de KPI llama a window.opener.guardarOEEServidorBridge al guardar parámetros de OEE.
+    window.guardarOEEServidorBridge = async (datos, callback) => {
+      if (perfilActual?.rol !== "ADMIN") { alert("Solo un ADMIN puede cambiar los parámetros de OEE."); return; }
+      const n = (v) => { const x = Number(v); return Number.isFinite(x) && x >= 0 && x <= 10000000 ? x : 0; };
+      try {
+        await addDoc(collection(db, "solicitudes"), {
+          tipo: "oee",
+          datos: { plannedHours: n(datos.plannedHours), lostHours: n(datos.lostHours), targetUnits: n(datos.targetUnits),
+                   realUnits: n(datos.realUnits), goodUnits: n(datos.goodUnits), badUnits: n(datos.badUnits) },
+          creadoPor: perfilActual.usuario, creadoEn: serverTimestamp()
+        });
+        toast("Parámetros OEE enviados. Se guardan en la hoja en aprox. 1 minuto.", 5000);
+        if (typeof callback === "function") callback({ success: true });
+      } catch (e) {
+        alert("No se pudieron guardar los parámetros: " + mensajeAuth(e));
+      }
+    };
+
+    document.querySelectorAll("[data-modulo]").forEach((b) => b.addEventListener("click", () => abrirModuloWeb(b.dataset.modulo)));
+
     document.querySelectorAll("[data-ir]").forEach((b) => b.addEventListener("click", () => {
       const destino = document.getElementById(b.dataset.ir);
       if (destino && destino.offsetParent !== null) destino.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -829,7 +1272,7 @@
 
       t.append(thead, tbody);
       const piezas = [];
-      if (perfilActual && esHoy) {
+      if (perfilActual && esHoy && perfilActual.rol !== "CONSULTA") {
         const txt = perfilActual.rol === "ADMIN"
           ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar."
           : "Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
@@ -1031,6 +1474,7 @@
     function puedeEditarLinea(linea) {
       if (!perfilActual || perfilActual.activo !== true) return false;
       if (perfilActual.rol === "ADMIN") return true;
+      if (perfilActual.rol !== "SUPERVISOR") return false;
       return (perfilActual.lineas || []).map(String).includes(String(linea));
     }
 
@@ -1074,9 +1518,12 @@
     function pintarUsuarioActual() {
       const p = perfilActual;
       const caja = $("usuario");
-      const rol = el("span", "rol" + (p.rol === "ADMIN" ? " admin" : ""), p.rol === "ADMIN" ? "ADMIN" : "Línea " + (p.lineas || []).join(", "));
+      const rol = p.rol === "ADMIN" ? el("span", "rol admin", "ADMIN")
+                : p.rol === "CONSULTA" ? el("span", "rol con", "CONSULTA")
+                : el("span", "rol", "Línea " + (p.lineas || []).join(", "));
       caja.replaceChildren(document.createTextNode((p.nombre || p.usuario) + " (" + p.usuario + ") "), rol);
       $("btn-admin").hidden = p.rol !== "ADMIN";
+      document.body.classList.toggle("es-admin", p.rol === "ADMIN");
       if (p.rol !== "ADMIN") cerrarAdmin();
     }
 
@@ -1356,14 +1803,14 @@
         const tr = el("tr");
         tr.append(el("td", "fuerte", u.usuario + (soyYo ? " (tú)" : "")), el("td", "izq", u.nombre || ""),
                   el("td", null, (u.lineas || []).join(", ") || "—"));
-        const tdRol = el("td"); tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : "sup"), u.rol)); tr.appendChild(tdRol);
+        const tdRol = el("td"); tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : u.rol === "CONSULTA" ? "con" : "sup"), u.rol)); tr.appendChild(tdRol);
         const tdEst = el("td"); tdEst.appendChild(el("span", "chip " + (u.activo ? "sup" : "off"), u.activo ? "ACTIVO" : "DESACTIVADO")); tr.appendChild(tdEst);
         const acc = el("td"); const caja = el("div", "acciones");
         const boton = (txt, fn, clase) => { const b = el("button", clase || null, txt); b.type = "button"; b.addEventListener("click", fn); caja.appendChild(b); };
         boton("Líneas", () => editarLineas(u));
         boton("Contraseña", () => cambiarPassword(u));
         if (!soyYo) {
-          boton(u.rol === "ADMIN" ? "Hacer supervisor" : "Hacer admin", () => cambiarRol(u));
+          boton("Rol", () => cambiarRol(u));
           boton(u.activo ? "Desactivar" : "Activar", () => cambiarActivo(u));
           boton("Eliminar", () => eliminarUsuario(u), "peligro");
         }
@@ -1387,14 +1834,20 @@
       const txt = prompt("Líneas de " + u.usuario + " (separadas por coma).\nUn ADMIN puede dejarlo vacío:", (u.lineas || []).join(", "));
       if (txt === null) return;
       const lineas = lineasDeTexto(txt);
-      if (u.rol !== "ADMIN" && !lineas.length) { alert("Un supervisor necesita al menos una línea."); return; }
+      if (u.rol === "SUPERVISOR" && !lineas.length) { alert("Un supervisor necesita al menos una línea."); return; }
       actualizarPerfil(u, { lineas }, "Líneas de " + u.usuario + ": " + (lineas.join(", ") || "ninguna"));
     }
 
     function cambiarRol(u) {
-      const nuevo = u.rol === "ADMIN" ? "SUPERVISOR" : "ADMIN";
+      const txt = prompt("Rol de " + u.usuario + " (ahora: " + u.rol + "). Escribe uno:\n" +
+                         "ADMIN = ve y captura todo, administra usuarios\n" +
+                         "SUPERVISOR = ve todo, captura solo sus líneas\n" +
+                         "CONSULTA = ve todo, no captura (gerentes, otras plantas)", u.rol);
+      if (txt === null) return;
+      const nuevo = String(txt).trim().toUpperCase();
+      if (!["ADMIN", "SUPERVISOR", "CONSULTA"].includes(nuevo)) { alert("Rol no válido. Usa ADMIN, SUPERVISOR o CONSULTA."); return; }
+      if (nuevo === u.rol) return;
       if (nuevo === "SUPERVISOR" && !(u.lineas || []).length) { alert("Primero asígnale al menos una línea con el botón \"Líneas\"."); return; }
-      if (!confirm("¿Cambiar a " + u.usuario + " a " + nuevo + "?")) return;
       actualizarPerfil(u, { rol: nuevo }, u.usuario + " ahora es " + nuevo);
     }
 
