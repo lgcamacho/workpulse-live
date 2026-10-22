@@ -278,6 +278,15 @@
     "use strict";
     var abrirNativo = window.open.bind(window);
     var pila = [], ignorarPop = 0;
+    // ¿Llegamos aquí desde el tablero con un módulo ya elegido? Al cerrar ese módulo se regresa directo.
+    var desdeTablero = false;
+    try { desdeTablero = sessionStorage.getItem("wpDesdeTablero") === "1"; sessionStorage.removeItem("wpDesdeTablero"); } catch (e) {}
+    var primerModuloPendiente = desdeTablero && /[?&]abrir=/.test(location.search);
+    function volverAlTablero(pasos) {
+      if (desdeTablero && history.length > pasos) history.go(-pasos);
+      else location.href = "./";
+    }
+    window.__wpVolverAlTablero = function () { volverAlTablero(1); };
 
     function quitar(capa) {
       var i = pila.indexOf(capa);
@@ -289,11 +298,17 @@
       return true;
     }
     function cerrarCapa(capa) {                // cerrada por el sistema o por "Regresar"
-      if (quitar(capa)) { ignorarPop++; history.back(); }
+      if (!quitar(capa)) return;
+      if (capa.__alTablero) { volverAlTablero(2); return; }     // un solo paso de regreso al tablero
+      ignorarPop++; history.back();
     }
     window.addEventListener("popstate", function () {
       if (ignorarPop > 0) { ignorarPop--; return; }
-      if (pila.length) quitar(pila[pila.length - 1]);      // botón Atrás del navegador
+      if (pila.length) {                                   // botón Atrás del navegador
+        var arriba = pila[pila.length - 1];
+        quitar(arriba);
+        if (arriba.__alTablero) volverAlTablero(1);
+      }
     });
 
     function nuevaCapa() {
@@ -322,6 +337,7 @@
         try { if (w.document && w.document.title) titulo.textContent = w.document.title; } catch (e) {}
       }, 700);
 
+      if (primerModuloPendiente && !pila.length) { capa.__alTablero = true; primerModuloPendiente = false; }
       pila.push(capa);
       history.pushState({ wpCapa: pila.length }, "");
       return w;
@@ -362,10 +378,25 @@
     }
   </style>
   <script>
-    // WORKPULSE (título) regresa al tablero principal
+    // Regresar al tablero principal: título WORKPULSE, botón fijo "Tablero" y PLAN OVERVIEW
     document.addEventListener("DOMContentLoaded", function () {
+      var ir = function () { if (window.__wpVolverAlTablero) window.__wpVolverAlTablero(); else location.href = "./"; };
       var h1 = document.querySelector(".header-title-box h1");
-      if (h1) { h1.title = "Ir al tablero principal"; h1.addEventListener("click", function () { location.href = "./"; }); }
+      if (h1) { h1.title = "Ir al tablero principal"; h1.addEventListener("click", ir); }
+      var b = document.createElement("button");
+      b.type = "button"; b.id = "wp-btn-tablero"; b.textContent = "\u2190 Tablero"; b.title = "Regresar al tablero principal";
+      b.style.cssText = "position:fixed;left:12px;top:12px;z-index:2147481000;background:#009B4A;color:#fff;border:none;border-radius:8px;" +
+        "padding:8px 12px;font:900 12px 'Segoe UI',Arial,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer;";
+      b.addEventListener("click", ir);
+      document.body.appendChild(b);
+      var grupo = document.querySelector(".header .btn-group");
+      if (grupo) {
+        var p = document.createElement("button");
+        p.className = "btn"; p.type = "button"; p.textContent = "PLAN OVERVIEW";
+        p.style.cssText = "border-color:#007b3a !important; color:#ffffff !important; background:#009B4A !important; font-weight:900;";
+        p.addEventListener("click", function () { location.href = "./?ver=plan"; });
+        grupo.insertBefore(p, grupo.firstChild);
+      }
     });
   </script>
 

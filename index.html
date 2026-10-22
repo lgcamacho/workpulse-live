@@ -48,6 +48,45 @@
                       font: inherit; font-size: 9.5px; font-weight: 800; text-transform: uppercase; padding: 5px 7px; border-radius: 5px;
                       cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.05); transition: all .2s ease; }
     .btn-group .btn:hover { background: var(--c); color: #fff; transform: translateY(-1px); }
+    /* ----- Plan Overview ----- */
+    .btn-group .btn.btn-plan { --c: #0f172a; --t: #fff; --f: #009B4A; border-color: #007b3a; font-weight: 900; }
+    .btn-group .btn.btn-plan:hover { background: #007b3a; }
+    #plan { position: fixed; inset: 0; z-index: 40; background: var(--fondo); display: flex; flex-direction: column; }
+    #plan[hidden] { display: none; }
+    .plan-barra { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--verde); color: #fff; padding: 8px 14px; }
+    .plan-barra button { background: #fff; color: var(--verde-osc); border: none; border-radius: 8px; padding: 8px 14px; font: inherit; font-weight: 900; cursor: pointer; }
+    .plan-barra h2 { margin: 0; color: #fff; font-size: 16px; letter-spacing: 1px; }
+    .plan-barra .plan-fecha { font-weight: 800; font-size: 12px; opacity: .95; }
+    .plan-barra label { margin-left: auto; font-weight: 900; font-size: 12px; display: flex; gap: 6px; align-items: center; }
+    .plan-barra select { font: inherit; font-weight: 900; border: none; border-radius: 6px; padding: 5px 8px; color: var(--verde-osc); }
+    .plan-cuerpo { flex: 1; overflow: auto; padding: 12px 14px 20px; }
+    .plan-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .plan-kpi { background: #fff; border: 2px solid var(--borde); border-radius: 10px; padding: 8px 10px; text-align: center; }
+    .plan-kpi b { display: block; font-size: 22px; font-weight: 900; }
+    .plan-kpi span { font-size: 10px; font-weight: 900; color: var(--gris); text-transform: uppercase; }
+    .plan-tabla-wrap { overflow: auto; background: #fff; border: 2px solid var(--texto); border-radius: 8px; max-height: calc(100vh - 210px); }
+    table.plan { border-collapse: separate; border-spacing: 0; font-size: 12px; min-width: 100%; }
+    table.plan th, table.plan td { border-right: 1px solid #d4d4d8; border-bottom: 1px solid #d4d4d8; padding: 4px 5px; text-align: center; white-space: nowrap; }
+    table.plan thead th { position: sticky; top: 0; z-index: 2; background: #e4e4e7; color: var(--texto); font-weight: 900; font-size: 10px; text-transform: none; }
+    table.plan thead th small { display: block; font-weight: 700; color: #52525b; }
+    table.plan .fija { position: sticky; left: 0; z-index: 1; background: #fff; color: var(--texto); text-align: left; min-width: 140px; max-width: 170px; }
+    table.plan thead .fija { z-index: 3; background: #e4e4e7; }
+    table.plan .fija b { font-size: 13px; }
+    table.plan .fija small { display: block; font-size: 9px; color: #52525b; font-weight: 700; white-space: normal; max-width: 190px; }
+    table.plan td.c { min-width: 38px; font-weight: 900; font-size: 12px; line-height: 1.1; padding: 4px 3px; }
+    table.plan td.c small { display: block; font-size: 9px; font-weight: 700; opacity: .85; }
+    table.plan td.sin { color: #a1a1aa; }
+    table.plan td.falta { background: #fee2e2; color: #991b1b; }
+    table.plan td.fut { background: repeating-linear-gradient(45deg, #f8fafc 0 6px, #eef2f7 6px 12px); color: #94a3b8; }
+    table.plan .ahora { box-shadow: inset 0 0 0 2px #2563eb; }
+    table.plan tr.tot td { background: #e4e4e7; font-weight: 900; position: sticky; bottom: 0; }
+    table.plan tr.tot td.fija { z-index: 2; }
+    table.plan td.res { font-weight: 900; min-width: 54px; }
+    .plan-leyenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; font-weight: 800; color: var(--gris); margin: 8px 2px 0; }
+    .plan-leyenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+    @media (max-width: 768px) { .plan-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .plan-barra label { margin-left: 0; } }
+    td.hora.edit-hora { cursor: pointer; touch-action: manipulation; user-select: none; }
+    td.hora.edit-hora:hover { background: #ecfdf5; }
     .barra-sesion { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 14px;
                     background: #fff; border-bottom: 1px solid var(--borde); padding: 8px 20px; }
     @media (min-width: 769px) {
@@ -288,6 +327,7 @@
       </div>
     </div>
     <div class="btn-group">
+        <button type="button" class="btn btn-plan" id="btn-plan">Plan Overview</button>
         <button type="button" class="btn" data-abrir="SEKAIA" style="--c:#8b5cf6; --t:#8b5cf6; --f:#f5f3ff;">SekaIA</button>
         <button type="button" class="btn" data-abrir="T10FUGAS" style="--c:#d97706; --t:#d97706; --f:#fffbeb;">T10 Fugas</button>
         <button type="button" class="btn" data-abrir="TMTTO" style="--c:#2563eb; --t:#2563eb; --f:#eff6ff;">T/MTTO</button>
@@ -454,6 +494,29 @@
       </div>
     </div>
   </main>
+
+  <!-- PLAN OVERVIEW: todas las líneas activas de 7:00 a 7:00 -->
+  <section id="plan" hidden aria-label="Plan Overview">
+    <div class="plan-barra">
+      <button type="button" id="plan-cerrar">&larr; Regresar</button>
+      <h2>PLAN OVERVIEW</h2>
+      <span class="plan-fecha" id="plan-fecha"></span>
+      <label>ÁREA <select id="plan-area"></select></label>
+    </div>
+    <div class="plan-cuerpo">
+      <div class="plan-kpis" id="plan-kpis"></div>
+      <div class="plan-tabla-wrap" id="plan-tabla"><div class="vacio">Cargando…</div></div>
+      <div class="plan-leyenda">
+        <span><i style="background:#009B4A"></i>≥ 95% de la meta</span>
+        <span><i style="background:#fbff00"></i>90 – 94%</span>
+        <span><i style="background:#dc2626"></i>&lt; 90%</span>
+        <span><i style="background:#fee2e2;border:1px solid #fca5a5"></i>Hora pasada sin captura</span>
+        <span><i style="background:#eef2f7;border:1px solid #cbd5e1"></i>Hora que no ha llegado</span>
+        <span><i style="box-shadow:inset 0 0 0 2px #2563eb"></i>Hora actual</span>
+        <span>Arriba: real · abajo: meta</span>
+      </div>
+    </div>
+  </section>
 
   <!-- Ventana para capturar una hora del pizarrón -->
   <div class="modal" id="modal-captura" hidden>
@@ -889,6 +952,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
     // Los módulos del sistema completo se abren en sistema.html (mismo sistema, sin cuenta de Google)
     document.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => {
+      try { sessionStorage.setItem("wpDesdeTablero", "1"); } catch (e) {}
       location.href = "sistema.html?abrir=" + encodeURIComponent(b.dataset.abrir);    // misma pestaña
     }));
     // ---------- Módulos web (datos publicados por Apps Script en modulos/<id>) ----------
@@ -1130,6 +1194,61 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     // ---------- Motor Production Board ----------
     const HORAS_BOARD = [["07:00","08:00"],["08:00","09:00"],["09:00","10:00"],["10:00","11:00"],["11:00","12:00"],
                          ["12:00","13:00"],["13:00","14:00"],["14:00","15:00"],["15:00","16:00"]];
+    // Horario de cada turno: lo que guardó un ADMIN (config/horarios) > lo que dice el turno
+    // ("D / 07:00 - 15:30 / LS" -> ... 14-15, 15:00-15:30) > 07:00 + hora.  Mismo cálculo en Apps Script.
+    let horariosConfig = {};
+    let horasActuales = HORAS_BOARD;
+    let turnoActual = "";
+    const claveTurno = (t) => String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, "_").slice(0, 80) || "SIN_TURNO";
+    const aMin = (s) => { const m = String(s).match(/^(\d{1,2}):(\d{2})$/); return m ? (+m[1]) * 60 + (+m[2]) : NaN; };
+    const aHora = (x) => { x = ((x % 1440) + 1440) % 1440; return String(Math.floor(x / 60)).padStart(2, "0") + ":" + String(x % 60).padStart(2, "0"); };
+    function horasDesdeTurno(turno) {
+      const m = String(turno || "").match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (!m) return null;
+      const ini = (+m[1]) * 60 + (+m[2]);
+      let fin = (+m[3]) * 60 + (+m[4]);
+      if (ini !== 420) return null;
+      if (fin <= ini) fin += 1440;
+      const filas = [];
+      for (let t = ini; t < fin && filas.length < 9; t += 60) filas.push([t, Math.min(t + 60, fin)]);
+      while (filas.length && filas.length < 9) { const u = filas[filas.length - 1][1]; filas.push([u, u + 60]); }
+      return filas.length ? filas.map(([a, b]) => [aHora(a), aHora(b)]) : null;
+    }
+    function horasDeTurno(turno) {
+      const guardadas = horariosConfig[claveTurno(turno)];
+      if (Array.isArray(guardadas) && guardadas.length === 9) {
+        const filas = guardadas.map((s) => String(s).split("-"));
+        if (filas.every((f) => f.length === 2 && !isNaN(aMin(f[0])) && !isNaN(aMin(f[1])))) return filas;
+      }
+      return horasDesdeTurno(turno) || HORAS_BOARD;
+    }
+
+    // Doble clic (o doble toque en el celular) sobre una hora: un ADMIN la cambia
+    let ultimoToque = { celda: null, t: 0 };
+    function toqueHora(td, idx, cual) {
+      const ahora = Date.now();
+      if (ultimoToque.celda === td && ahora - ultimoToque.t < 450) { ultimoToque = { celda: null, t: 0 }; editarHora(idx, cual); }
+      else ultimoToque = { celda: td, t: ahora };
+    }
+    async function editarHora(idx, cual) {
+      if (perfilActual?.rol !== "ADMIN") return;
+      const filas = horasActuales.map((f) => f.slice());
+      const actual = filas[idx][cual === "ini" ? 0 : 1];
+      const txt = prompt("Turno " + turnoActual + "\nFila " + (idx + 1) + " · hora de " + (cual === "ini" ? "INICIO" : "FIN") +
+                         " (formato 24 h, ej. 15:30):", actual);
+      if (txt === null) return;
+      const v = txt.trim().replace(/\./g, ":");
+      const m = v.match(/^(\d{1,2}):(\d{2})$/);
+      if (!m || +m[1] > 23 || +m[2] > 59) { alert("Hora no válida. Usa HH:MM, por ejemplo 15:30."); return; }
+      filas[idx][cual === "ini" ? 0 : 1] = String(m[1]).padStart(2, "0") + ":" + m[2];
+      const porTurno = { ...horariosConfig, [claveTurno(turnoActual)]: filas.map((f) => f[0] + "-" + f[1]) };
+      try {
+        await setDoc(doc(db, "config", "horarios"), { porTurno, actualizadoEn: serverTimestamp(), actualizadoPor: perfilActual.usuario });
+        toast("Horario del turno actualizado.");
+      } catch (e) {
+        alert("No se pudo guardar el horario: " + mensajeAuth(e));
+      }
+    }
     const PREF_KEY = "workpulse-live-filtros";
     let pizarronActual = null;
 
@@ -1189,6 +1308,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }
       llenarSelect(selTurno, turnos, turno);
       guardarPref({ area, turno });
+      turnoActual = turno;
+      horasActuales = horasDeTurno(turno);
+      const esAdminHoras = perfilActual?.rol === "ADMIN";
 
       const lineas = delArea.filter((l) => norm(l.turno) === norm(turno));
 
@@ -1201,7 +1323,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (!esHoy) caja.appendChild(document.createTextNode(" · no es el día de hoy"));
 
       const ahora = new Date();
-      const horaActual = ahora.getHours() * 100 + ahora.getMinutes();
+      const minutoAhora = ahora.getHours() * 60 + ahora.getMinutes();
 
       const t = el("table", "board");
       t.style.minWidth = Math.max(700, 360 + lineas.length * 120) + "px";
@@ -1224,11 +1346,19 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       let acumMeta = 0, acumReal = 0, hayCaptura = false;
       const totLinea = lineas.map(() => 0);
 
-      HORAS_BOARD.forEach(([ini, fin], idx) => {
+      horasActuales.forEach(([ini, fin], idx) => {
         const metaHora = lineas.reduce((a, l) => a + (parseInt(l.metas?.[idx], 10) || 0), 0);
-        const futura = esHoy && horaActual < parseInt(ini.replace(":", ""), 10);
+        const futura = esHoy && minutoAhora < aMin(ini);
         const tr = el("tr");
-        tr.append(el("td", "hora", ini), el("td", "hora", fin), el("td", "meta", metaHora));
+        const tdIni = el("td", "hora", ini), tdFin = el("td", "hora", fin);
+        if (esAdminHoras) {
+          [[tdIni, "ini"], [tdFin, "fin"]].forEach(([td, cual]) => {
+            td.classList.add("edit-hora");
+            td.title = "Doble clic para cambiar la hora";
+            td.addEventListener("click", () => toqueHora(td, idx, cual));
+          });
+        }
+        tr.append(tdIni, tdFin, el("td", "meta", metaHora));
 
         let suma = 0, capturada = false;
         lineas.forEach((l, i) => {
@@ -1287,7 +1417,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const piezas = [];
       if (perfilActual && esHoy && perfilActual.rol !== "CONSULTA") {
         const txt = perfilActual.rol === "ADMIN"
-          ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar."
+          ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar. Doble clic en una hora para cambiar el horario del turno."
           : "Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
         piezas.push(el("div", "ayuda-captura", txt));
       }
@@ -1456,7 +1586,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function escucharDocumento(ref, alCambiar, alError) {
       return new Promise((resolve, reject) => {
         let primera = true;
-        const cancelar = onSnapshot(ref,
+        const cancelar = onSnapshot(ref, { includeMetadataChanges: true },
           (snap) => { alCambiar(snap); if (primera) { primera = false; resolve(cancelar); } },
           (err) => { alError(err); if (primera) { primera = false; reject(err); } });
       });
@@ -1491,9 +1621,17 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       return (perfilActual.lineas || []).map(String).includes(String(linea));
     }
 
+    let cancelarHorarios = null;
+    function escucharHorarios() {
+      if (cancelarHorarios) cancelarHorarios();
+      cancelarHorarios = onSnapshot(doc(db, "config", "horarios"), (snap) => {
+        horariosConfig = (snap.exists() && snap.data().porTurno) || {};
+        if (pizarronActual) pintarPizarron();
+      }, (err) => console.warn("[Horarios]", err));
+    }
     function detenerEscuchas() {
-      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios].forEach((f) => { if (f) f(); });
-      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = null;
+      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios].forEach((f) => { if (f) f(); });
+      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = null;
     }
     const detener = detenerEscuchas;
 
@@ -1521,6 +1659,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("usuario-box").hidden = true;
       $("panel-admin").hidden = true;
       $("modal-captura").hidden = true;
+      $("plan").hidden = true;
       $("login").hidden = false;
       $("btn-entrar").disabled = false;
       $("btn-entrar").textContent = "Entrar";
@@ -1657,6 +1796,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         escucharPerfil(u.uid);
         iniciar();
         escucharCapturas();
+        escucharHorarios();
+        if (new URLSearchParams(location.search).get("ver") === "plan" && $("plan").hidden) abrirPlan(false);
       } catch (e) {
         mensajePendiente = mensajeAuth(e);
         await signOut(auth);
@@ -1701,7 +1842,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           // Cada sección se pinta por separado: si una falla, las demás siguen visibles.
           [[pintarPizarron, leerJSON(d.pizarron, null)], [pintarCentroComando, leerJSON(d.centroComando, null)],
            [pintarKpis, leerJSON(d.kpis, null)], [pintarPodio, leerJSON(d.rankingSup, [])],
-           [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])]]
+           [pintarLineas, leerJSON(d.lineas, [])], [pintarFallas, leerJSON(d.topFallas, [])],
+           [pintarPlan, leerJSON(d.planOverview, null)]]
             .forEach(([fn, valor]) => { try { fn(valor); } catch (e) { console.error(fn.name, e); } });
         }, (err) => {
           console.error("[WorkPulse Live]", err);
@@ -1714,11 +1856,129 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }
     }
 
+    // ---------- PLAN OVERVIEW ----------
+    const HORAS_PLAN = Array.from({ length: 24 }, (_, i) => [aHora(420 + i * 60), aHora(480 + i * 60)]);
+    let planActual = null;
+    function pintarPlan(pl) {
+      if (pl !== undefined) planActual = pl;
+      pl = planActual;
+      if ($("plan").hidden) return;
+      const cont = $("plan-tabla");
+      if (!pl) { vacio(cont, "El Plan Overview todavía no se publica (llega en la próxima actualización de Apps Script)."); return; }
+      if (pl.error) { vacio(cont, "No se pudo armar el Plan Overview: " + pl.error); return; }
+      const todas = Array.isArray(pl.lineas) ? pl.lineas : [];
+      const areas = ["TODAS", ...new Set(todas.map((l) => String(l.area || "").toUpperCase()).filter(Boolean))];
+      const sel = $("plan-area");
+      const elegida = areas.includes(sel.value) ? sel.value : "TODAS";
+      llenarSelect(sel, areas, elegida);
+      const lineas = todas.filter((l) => elegida === "TODAS" || String(l.area || "").toUpperCase() === elegida);
+      $("plan-fecha").textContent = (pl.fecha || "") + " 07:00 → " + (pl.fechaFin || "") + " 07:00";
+
+      // ¿En qué hora del día productivo vamos? (0 = 07-08 … 23 = 06-07)
+      const ahora = new Date();
+      const hoy = fechaHoyCliente();
+      let idxAhora = -1;
+      if (pl.fecha === hoy && ahora.getHours() >= 7) idxAhora = ahora.getHours() - 7;
+      else if (pl.fechaFin === hoy && ahora.getHours() < 7) idxAhora = ahora.getHours() + 17;
+      else if (pl.fecha && pl.fecha !== hoy) idxAhora = 24;                         // día ya cerrado
+
+      const t = el("table", "plan");
+      const trh = el("tr");
+      const thL = el("th", "fija", "LÍNEA"); trh.appendChild(thL);
+      HORAS_PLAN.forEach(([a, b], i) => {
+        const th = el("th", i === idxAhora ? "ahora" : null, a); th.appendChild(el("small", null, b)); trh.appendChild(th);
+      });
+      ["META", "REAL", "%", "PARO"].forEach((x) => trh.appendChild(el("th", null, x)));
+      const thead = el("thead"); thead.appendChild(trh);
+      const tbody = el("tbody");
+      const totMeta = new Array(24).fill(0), totReal = new Array(24).fill(0), totHay = new Array(24).fill(false);
+      let gMeta = 0, gReal = 0, gMetaVencida = 0, gDt = 0, conFalta = 0;
+
+      lineas.forEach((l) => {
+        const tr = el("tr");
+        const td0 = el("td", "fija");
+        td0.appendChild(el("b", null, "LÍNEA " + l.linea));
+        td0.appendChild(el("small", null, [l.area, l.supervisor, l.turno].filter(Boolean).join(" · ")));
+        tr.appendChild(td0);
+        let sMeta = 0, sReal = 0, sMetaVencida = 0, sDt = 0, falta = false;
+        for (let i = 0; i < 24; i++) {
+          const meta = num(l.metas?.[i]);
+          const r = l.real?.[i];
+          const hay = r !== null && r !== undefined && r !== "";
+          const vencida = i < idxAhora;
+          const td = el("td", "c" + (i === idxAhora ? " ahora" : ""));
+          sMeta += meta; totMeta[i] += meta; sDt += num(l.dt?.[i]);
+          if (hay) {
+            const v = num(r);
+            td.textContent = v; td.appendChild(el("small", null, meta || "—"));
+            if (meta > 0) pintarAndon(td, andon(v, meta));
+            sReal += v; totReal[i] += v; totHay[i] = true; sMetaVencida += meta;
+          } else if (meta <= 0) {
+            td.classList.add("sin"); td.textContent = "·";
+          } else if (vencida) {
+            td.classList.add("falta"); td.textContent = "–"; td.appendChild(el("small", null, meta)); falta = true; sMetaVencida += meta;
+            td.title = "Hora pasada sin captura";
+          } else {
+            td.classList.add("fut"); td.appendChild(el("small", null, meta));
+          }
+          tr.appendChild(td);
+        }
+        const pct = sMetaVencida > 0 ? Math.round(sReal / sMetaVencida * 100) : 0;
+        const tdP = el("td", "res", sMetaVencida > 0 ? pct + "%" : "—");
+        if (sMetaVencida > 0) pintarAndon(tdP, andon(sReal, sMetaVencida));
+        tr.append(el("td", "res", sMeta), el("td", "res", sReal), tdP, el("td", "res", sDt ? sDt + " min" : "—"));
+        tbody.appendChild(tr);
+        gMeta += sMeta; gReal += sReal; gMetaVencida += sMetaVencida; gDt += sDt; if (falta) conFalta++;
+      });
+
+      const trt = el("tr", "tot");
+      trt.appendChild(el("td", "fija", "TOTAL"));
+      for (let i = 0; i < 24; i++) {
+        const td = el("td", "c" + (i === idxAhora ? " ahora" : ""));
+        if (totHay[i]) { td.textContent = totReal[i]; td.appendChild(el("small", null, totMeta[i])); if (totMeta[i] > 0) pintarAndon(td, andon(totReal[i], totMeta[i])); }
+        else { td.appendChild(el("small", null, totMeta[i] || "·")); }
+        trt.appendChild(td);
+      }
+      const gPct = gMetaVencida > 0 ? Math.round(gReal / gMetaVencida * 100) : 0;
+      const tdGP = el("td", "res", gMetaVencida > 0 ? gPct + "%" : "—");
+      if (gMetaVencida > 0) pintarAndon(tdGP, andon(gReal, gMetaVencida));
+      trt.append(el("td", "res", gMeta), el("td", "res", gReal), tdGP, el("td", "res", gDt ? gDt + " min" : "—"));
+      tbody.appendChild(trt);
+      t.append(thead, tbody);
+      cont.replaceChildren(lineas.length ? t : el("div", "vacio", "No hay líneas activas en esta área."));
+
+      const kpi = (valor, etiqueta, color) => { const d = el("div", "plan-kpi"); const b = el("b", null, valor); if (color) b.style.color = color; d.append(b, el("span", null, etiqueta)); return d; };
+      $("plan-kpis").replaceChildren(
+        kpi(lineas.length, "Líneas activas"),
+        kpi(gMeta.toLocaleString("es-MX"), "Meta del día (7 a 7)"),
+        kpi(gReal.toLocaleString("es-MX"), "Real acumulado"),
+        kpi(gMetaVencida > 0 ? gPct + "%" : "—", "Avance vs meta a la hora", gMetaVencida > 0 ? andon(gReal, gMetaVencida).bg.replace("#fbff00", "#b45309") : null),
+        kpi(conFalta, "Líneas con horas sin capturar", conFalta ? "#dc2626" : "#009B4A"));
+    }
+    function abrirPlan(conHistorial = true) {
+      $("plan").hidden = false;
+      document.body.style.overflow = "hidden";
+      if (conHistorial) history.pushState({ wpPlan: 1 }, "");
+      pintarPlan();
+    }
+    function cerrarPlan(desdeHistorial = false) {
+      if ($("plan").hidden) return;
+      $("plan").hidden = true;
+      document.body.style.overflow = "";
+      if (!desdeHistorial && history.state && history.state.wpPlan) history.back();
+      else if (/[?&]ver=plan/.test(location.search)) history.replaceState(null, "", location.pathname);
+    }
+    $("btn-plan").addEventListener("click", () => abrirPlan());
+    $("plan-cerrar").addEventListener("click", () => cerrarPlan());
+    $("plan-area").addEventListener("change", () => pintarPlan());
+    window.addEventListener("popstate", () => { if (!$("plan").hidden) cerrarPlan(true); });
+    setInterval(() => { if (!$("plan").hidden) pintarPlan(); }, 60000);     // la "hora actual" avanza sola
+
     // ---------- Captura de una hora ----------
     const CAMPOS_6M = ["hombre", "maquina", "material", "metodo", "calidad", "produccion", "otros"];
 
     function abrirCaptura(l, idx, cap) {
-      const [ini, fin] = HORAS_BOARD[idx];
+      const [ini, fin] = horasActuales[idx] || HORAS_BOARD[idx];
       capturaActual = { linea: String(l.linea), idx };
       $("cap-titulo").textContent = "Línea " + l.linea + " · " + ini + " – " + fin;
       $("cap-sub").textContent = "Meta de la hora: " + (parseInt(l.metas?.[idx], 10) || 0) + " pzs · Supervisor: " + (l.supervisor || "—");
