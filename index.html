@@ -50,6 +50,19 @@
     .btn-group .btn:hover { background: var(--c); color: #fff; transform: translateY(-1px); }
     .barra-sesion { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 14px;
                     background: #fff; border-bottom: 1px solid var(--borde); padding: 8px 20px; }
+    @media (min-width: 769px) {
+      header.wp-header { flex-direction: column; align-items: center; position: relative; gap: 10px; padding: 16px 20px 12px; text-align: center; }
+      .header-left { flex-direction: column; align-items: center; gap: 6px; width: 100%; }
+      .header-left img { height: 50px; }
+      .header-title-box { align-items: center; width: 100%; }
+      .header-fila { justify-content: center; gap: 10px 12px; width: 100%; }
+      .header-fila h1 { flex-basis: 100%; text-align: center; font-size: 32px; margin: 0 0 6px; letter-spacing: 1px; }
+      .header-fila .btn-neon, .header-fila .btn-alarma { min-height: 42px; font-size: 12.5px; padding: 8px 16px; }
+      .header-fila .btn-alarma { font-size: 15px; }
+      .header-fila .btn-tv { position: absolute; top: 14px; right: 18px; }
+      .header-sub-text { justify-content: center; margin-top: 8px; }
+      .btn-group { justify-content: center; width: 100%; border-top: 1px solid var(--borde); padding-top: 10px; }
+    }
     @media (max-width: 1400px) {
       header.wp-header { flex-direction: column; }
       .header-left { justify-content: center; }
@@ -278,7 +291,7 @@
         <button type="button" class="btn" data-abrir="SEKAIA" style="--c:#8b5cf6; --t:#8b5cf6; --f:#f5f3ff;">SekaIA</button>
         <button type="button" class="btn" data-abrir="T10FUGAS" style="--c:#d97706; --t:#d97706; --f:#fffbeb;">T10 Fugas</button>
         <button type="button" class="btn" data-abrir="TMTTO" style="--c:#2563eb; --t:#2563eb; --f:#eff6ff;">T/MTTO</button>
-        <button type="button" class="btn" data-modulo="KPI" style="--c:#009B4A;">KPI</button>
+        <button type="button" class="btn" data-abrir="KPI" style="--c:#009B4A;">KPI</button>
         <button type="button" class="btn" data-abrir="HISTORIAL" style="--c:#84cc16;">Historial</button>
         <button type="button" class="btn" data-abrir="MRO" style="--c:#f59e0b;">Progreso MRO</button>
         <button type="button" class="btn" data-abrir="OMRO" style="--c:#3b82f6;">O/MRO</button>
@@ -876,7 +889,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
     // Los módulos del sistema completo se abren en sistema.html (mismo sistema, sin cuenta de Google)
     document.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => {
-      window.open("sistema.html?abrir=" + encodeURIComponent(b.dataset.abrir), "_blank");
+      location.href = "sistema.html?abrir=" + encodeURIComponent(b.dataset.abrir);    // misma pestaña
     }));
     // ---------- Módulos web (datos publicados por Apps Script en modulos/<id>) ----------
     const MODULOS_WEB = {

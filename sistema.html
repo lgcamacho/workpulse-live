@@ -257,6 +257,117 @@
       }
     });
   </script>
+  <!-- =====================================================================
+       WORKPULSE · MÓDULOS EN LA MISMA PESTAÑA
+       Los módulos del sistema abrían ventanas nuevas (window.open). Aquí se
+       abren en una capa a pantalla completa dentro de la misma pestaña, con
+       un botón "Regresar" (también funciona el botón Atrás del navegador).
+       ===================================================================== -->
+  <style>
+    .wp-capa { position: fixed; inset: 0; z-index: 2147482000; background: #fff; display: flex; flex-direction: column; }
+    .wp-capa-barra { display: flex; align-items: center; gap: 12px; background: #009B4A; color: #fff; padding: 8px 12px;
+                     font: 800 13px 'Segoe UI', Arial, sans-serif; flex: 0 0 auto; }
+    .wp-capa-barra button { background: #fff; color: #007b3a; border: none; border-radius: 8px; padding: 8px 14px; font: 900 13px 'Segoe UI', Arial, sans-serif;
+                            cursor: pointer; white-space: nowrap; }
+    .wp-capa-barra span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; letter-spacing: .5px; }
+    .wp-capa iframe { flex: 1 1 auto; width: 100%; border: 0; background: #fff; }
+    body.wp-con-capa { overflow: hidden; }
+  </style>
+  <script>
+  (function () {
+    "use strict";
+    var abrirNativo = window.open.bind(window);
+    var pila = [], ignorarPop = 0;
+
+    function quitar(capa) {
+      var i = pila.indexOf(capa);
+      if (i === -1) return false;
+      pila.splice(i, 1);
+      clearInterval(capa.__timer);
+      if (capa.parentNode) capa.parentNode.removeChild(capa);
+      if (!pila.length) document.body.classList.remove("wp-con-capa");
+      return true;
+    }
+    function cerrarCapa(capa) {                // cerrada por el sistema o por "Regresar"
+      if (quitar(capa)) { ignorarPop++; history.back(); }
+    }
+    window.addEventListener("popstate", function () {
+      if (ignorarPop > 0) { ignorarPop--; return; }
+      if (pila.length) quitar(pila[pila.length - 1]);      // botón Atrás del navegador
+    });
+
+    function nuevaCapa() {
+      var capa = document.createElement("div");
+      capa.className = "wp-capa";
+      var barra = document.createElement("div");
+      barra.className = "wp-capa-barra";
+      var regresar = document.createElement("button");
+      regresar.type = "button";
+      regresar.textContent = "← Regresar";
+      var titulo = document.createElement("span");
+      titulo.textContent = "WorkPulse";
+      barra.appendChild(regresar); barra.appendChild(titulo);
+      var marco = document.createElement("iframe");
+      marco.setAttribute("title", "Módulo WorkPulse");
+      capa.appendChild(barra); capa.appendChild(marco);
+      document.body.appendChild(capa);
+      document.body.classList.add("wp-con-capa");
+
+      var w = marco.contentWindow;
+      try { w.opener = window; } catch (e) {}
+      w.open = function (url, nombre, opciones) { return abrir(url, nombre, opciones); };   // ventanas dentro de ventanas
+      w.close = function () { cerrarCapa(capa); };
+      regresar.addEventListener("click", function () { cerrarCapa(capa); });
+      capa.__timer = setInterval(function () {
+        try { if (w.document && w.document.title) titulo.textContent = w.document.title; } catch (e) {}
+      }, 700);
+
+      pila.push(capa);
+      history.pushState({ wpCapa: pila.length }, "");
+      return w;
+    }
+
+    function abrir(url, nombre, opciones) {
+      var u = String(url === undefined || url === null ? "" : url).trim();
+      // Enlaces de verdad (fotos, PDFs, Drive, WhatsApp...): esos sí en pestaña nueva
+      if (u && u !== "about:blank") return abrirNativo(url, nombre, opciones);
+      if (!document.body) return abrirNativo(url, nombre, opciones);
+      return nuevaCapa();
+    }
+    window.open = abrir;
+  })();
+  </script>
+
+  <!-- Encabezado acomodado: logo arriba, WORKPULSE debajo y los botones principales centrados -->
+  <style>
+    @media (min-width: 769px) {
+      .header { flex-direction: column !important; align-items: center !important; position: relative; gap: 10px !important;
+                padding: 16px 20px 12px !important; text-align: center; }
+      .header-left { flex-direction: column !important; align-items: center !important; gap: 6px !important; width: 100%; }
+      .header-left img { height: 50px !important; }
+      .header-title-box { align-items: center !important; width: 100%; }
+      .header-title-box > div:first-child { display: flex !important; flex-wrap: wrap !important; justify-content: center !important;
+                                            align-items: center !important; gap: 10px 12px !important; width: 100%; }
+      .header-title-box > div:first-child > h1 { flex-basis: 100%; text-align: center; font-size: 32px !important; margin: 0 0 6px !important;
+                                                 letter-spacing: 1px; cursor: pointer; }
+      .header-title-box > div:first-child > .btn-neon-produccion,
+      .header-title-box > div:first-child > .btn-neon-ehs,
+      .header-title-box > div:first-child > .btn-ehs-alarm { min-height: 42px; font-size: 12.5px !important; padding: 8px 16px !important;
+                                                             justify-content: center; }
+      .header-title-box > div:first-child > .btn-ehs-alarm { font-size: 15px !important; }
+      .btn-eye-tv { position: absolute; top: 14px; right: 18px; background: #f1f5f9; border: 1.5px solid #94a3b8; color: #334155;
+                    font: 900 11px 'Segoe UI', Arial, sans-serif; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+      .header-sub-text { justify-content: center !important; margin-top: 8px !important; }
+      .header .btn-group { justify-content: center !important; width: 100%; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 2px; }
+    }
+  </style>
+  <script>
+    // WORKPULSE (título) regresa al tablero principal
+    document.addEventListener("DOMContentLoaded", function () {
+      var h1 = document.querySelector(".header-title-box h1");
+      if (h1) { h1.title = "Ir al tablero principal"; h1.addEventListener("click", function () { location.href = "./"; }); }
+    });
+  </script>
 
   
   <meta charset="UTF-8">
@@ -1295,26 +1406,22 @@ body.alarm-active-bg {
         <div class="header-title-box">
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
     <h1>WORKPULSE</h1>
-    <!-- 🟢 BOTÓN PRODUCCIÓN VERDE CORPORATIVO NIDEC (#009B4A) -->
-    <button type="button" class="btn-neon-produccion" onclick="abrirModalProduccion()">
-        REAL TIME PRODUCTION DATA
+    <!--  BOTÓN PRODUCCIÓN VERDE CORPORATIVO NIDEC (#009B4A) -->
+    <button type="button" class="btn-neon-produccion" onclick="abrirModalProduccion()">REAL TIME PRODUCTION DATA
     </button>
 
-    <!-- 🟢 BOTÓN PRODUCCIÓN 2: MOTOR PRODUCTION BOARD -->
-    <button type="button" class="btn-neon-produccion" onclick="abrirPizarronGeneralProduccion()">
-        MOTOR PRODUCTION BOARD
+    <!--  BOTÓN PRODUCCIÓN 2: MOTOR PRODUCTION BOARD -->
+    <button type="button" class="btn-neon-produccion" onclick="abrirPizarronGeneralProduccion()">MOTOR PRODUCTION BOARD
     </button>
 
-    <!-- 🔴 BOTÓN EHS -->
-    <button type="button" class="btn-neon-ehs" onclick="abrirSistemaPrimerosAuxiliosEHS()">
-        ✚ SISTEMA DE GESTIÓN DE PRIMEROS AUXILIOS – EHS ✚
+    <!--  BOTÓN EHS -->
+    <button type="button" class="btn-neon-ehs" onclick="abrirSistemaPrimerosAuxiliosEHS()">SISTEMA DE GESTIÓN DE PRIMEROS AUXILIOS – EHS 
     </button>
 
-    <!-- 🚨 BOTÓN ALARMA -->
-    <button class="btn-ehs-alarm" onclick="solicitarInicioAlarmaEHS()">
-        🚨PRIMEROS AUXILIOS🚨
-<!-- BOTÓN MODO OJO 👁️ ESPEJO DINÁMICO TV -->
-<button type="button" class="btn-eye-tv" onclick="iniciarCarruselEspejoTV()" title="Abrir Modo Espejo TV Andon en Vivo">👁️<span></span>
+    <!--  BOTÓN ALARMA -->
+    <button class="btn-ehs-alarm" onclick="solicitarInicioAlarmaEHS()">PRIMEROS AUXILIOS
+<!-- BOTÓN MODO OJO  ESPEJO DINÁMICO TV -->
+<button type="button" class="btn-eye-tv" onclick="iniciarCarruselEspejoTV()" title="Abrir Modo Espejo TV Andon en Vivo">MODO TV
 </button>
             </div>
             <div class="header-sub-text">
@@ -1327,7 +1434,7 @@ body.alarm-active-bg {
         </div>
     </div>
  <div class="btn-group">
-            <button class="btn btn-ai" onclick="abrirResumenIA()">🤖 SekaIA</button>
+            <button class="btn btn-ai" onclick="abrirResumenIA()">SekaIA</button>
             <button class="btn btn-admin" style="border-color:#d97706 !important; color:#d97706 !important; background:#fffbeb !important;" onclick="abrirTop10NuevaPestana()">T10 FUGAS</button>
             <button class="btn btn-open" style="border-color:#2563eb !important; color:#2563eb !important; background:#eff6ff !important;" onclick="abrirTarjetasMttoNuevaPestana()">T/MTTO</button>
             <button class="btn btn-kpis" onclick="abrirKpisNuevaPestana()">KPI</button>
@@ -1340,14 +1447,14 @@ body.alarm-active-bg {
             <button class="btn btn-log" onclick="cargarLogs()">DATA</button>
             <button class="btn btn-admin" onclick="abrirModal('admin-modal')">ADMIN</button>
             <button class="btn btn-ehs" style="border-color:#0284c7 !important; color:#0284c7 !important; background:#f0f9ff !important;" onclick="abrirPermisosEHSNuevaPestana()">PERMISOS</button>
-            <button class="btn btn-ehs" style="border-color:#009B4A !important; color:#009B4A !important; background:#f0fdf4 !important;" onclick="abrirModalSolicitarPermisoEHS()">🛡️O/P-EHS</button>
-            <button class="btn btn-admin" style="border-color:#2563eb !important; color:#2563eb !important; background:#eff6ff !important;" onclick="abrirModalPersonal()">👥</button>
-            <button class="btn btn-admin" style="border-color:#f59e0b !important; color:#d97706 !important; background:#fffbeb !important; font-weight:900;" onclick="abrirModalPerformance()">🏆 P-EMPLEADO FUGAS</button>
-            <button class="btn btn-admin" style="border-color:#0284c7 !important; color:#0284c7 !important; background:#f0f9ff !important; font-weight:900;" onclick="abrirModalEquipos()">⚙️ EQUIPOS</button>
+            <button class="btn btn-ehs" style="border-color:#009B4A !important; color:#009B4A !important; background:#f0fdf4 !important;" onclick="abrirModalSolicitarPermisoEHS()">O/P-EHS</button>
+            <button class="btn btn-admin" style="border-color:#2563eb !important; color:#2563eb !important; background:#eff6ff !important;" onclick="abrirModalPersonal()">PERSONAL</button>
+            <button class="btn btn-admin" style="border-color:#f59e0b !important; color:#d97706 !important; background:#fffbeb !important; font-weight:900;" onclick="abrirModalPerformance()">P-EMPLEADO FUGAS</button>
+            <button class="btn btn-admin" style="border-color:#0284c7 !important; color:#0284c7 !important; background:#f0f9ff !important; font-weight:900;" onclick="abrirModalEquipos()">EQUIPOS</button>
             <!-- BOTÓN MENÚ PASE ENTRADA / SALIDA -->
-            <button class="btn btn-admin" style="border-color:#0284c7 !important; color:#0284c7 !important; background:#f0f9ff !important; font-weight:900;" onclick="mostrarResumenExcelRefacciones()">📋 RESUMEN REFACCIONES</button>
-            <button class="btn btn-admin" style="border-color:#009B4A !important; color:#009B4A !important; background:#f0fdf4 !important; font-weight:900;" onclick="mostrarResumenEjecutivoProduccion()">📊 RESUMEN PRODUCCIÓN</button>
-            <button class="btn btn-ehs" style="border-color:#009B4A !important; color:#009B4A !important; background:#f0fdf4 !important; font-weight:900;" onclick="abrirMenuPaseRRHH()">📄 PASE ENT / SALIDA</button>     
+            <button class="btn btn-admin" style="border-color:#0284c7 !important; color:#0284c7 !important; background:#f0f9ff !important; font-weight:900;" onclick="mostrarResumenExcelRefacciones()">RESUMEN REFACCIONES</button>
+            <button class="btn btn-admin" style="border-color:#009B4A !important; color:#009B4A !important; background:#f0fdf4 !important; font-weight:900;" onclick="mostrarResumenEjecutivoProduccion()">RESUMEN PRODUCCIÓN</button>
+            <button class="btn btn-ehs" style="border-color:#009B4A !important; color:#009B4A !important; background:#f0fdf4 !important; font-weight:900;" onclick="abrirMenuPaseRRHH()">PASE ENT / SALIDA</button>     
                           <button class="btn btn-fugas" onclick="abrirGestionFugas()">FUGAS.</button>
 
         </div>
@@ -12401,10 +12508,10 @@ function mostrarResumenEjecutivoProduccion() {
   function iniciar(clave) {
     var m = MODULOS[String(clave || "").toUpperCase()];
     if (!m) return;
-    if (m[3]) { mostrarBarra(m); return; }          // pestaña nueva: esperar el toque
+              // pestaña nueva: esperar el toque
     setTimeout(function () {                        // ventana dentro de la app: se abre sola
       try { ejecutar(m); } catch (e) { console.error(e); mostrarBarra(m); }
-    }, 2300);                                       // después del cargador inicial
+    }, 600);
   }
 
   if (window.google && google.script && google.script.url) {
