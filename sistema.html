@@ -149,7 +149,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, serverTimestamp }
+    import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+             doc, getDoc, setDoc, onSnapshot, collection, serverTimestamp }
       from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
@@ -162,7 +163,10 @@
       appId: "1:187436233074:web:249101251e6f53b5012deb"
     };
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // Caché local (IndexedDB): al volver a abrir un módulo, los datos aparecen al instante y luego se actualizan
+    let db;
+    try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+    catch (e) { console.warn("[WorkPulse] sin caché local:", e); db = getFirestore(app); }
     const auth = getAuth(app);
     const TROZO = 400000;
     const ESPERA_MAX_MS = 4 * 60 * 1000;

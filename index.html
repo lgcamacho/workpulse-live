@@ -6,6 +6,15 @@
   <title>WorkPulse</title>
   <!-- App instalable (celular y computadora) -->
   <link rel="manifest" href="manifest.webmanifest">
+  <!-- Conectar desde ya con los servidores que se usan al entrar (ahorra tiempo en el celular) -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js">
   <meta name="theme-color" content="#009B4A">
   <link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
   <link rel="apple-touch-icon" href="icono-180.png">
@@ -1157,7 +1166,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
   </script>
   <script type="module">
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where,
+    import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getDocFromCache,
+             doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where,
              serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut }
       from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
@@ -2203,7 +2213,12 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     // ---------- Perfil y escuchas ----------
     async function entrarConPerfil(u) {
       try {
-        const snap = await getDoc(doc(db, "usuarios", u.uid));
+        // Primero el perfil guardado en este equipo (instantáneo); si no hay, se pide al servidor.
+        // escucharPerfil() lo mantiene al día y las Reglas de Firestore siempre revisan el perfil real.
+        const ref = doc(db, "usuarios", u.uid);
+        let snap = null;
+        try { snap = await getDocFromCache(ref); } catch (e) { snap = null; }
+        if (!snap || !snap.exists() || snap.data().activo !== true || snap.data().rol === "PENDIENTE") snap = await getDoc(ref);
         if (!snap.exists()) {
           mensajePendiente = "Tu usuario no tiene perfil en WorkPulse. Pide ayuda a un administrador.";
           await signOut(auth);
@@ -3264,7 +3279,14 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
-      db = getFirestore(app);
+      // Guarda en el celular/PC lo último que se vio: al volver a entrar el tablero aparece al instante
+      // y luego se actualiza solo. Si el navegador no lo permite (modo incógnito), funciona como antes.
+      try {
+        db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+      } catch (e) {
+        console.warn("[WorkPulse] sin caché local:", e);
+        db = getFirestore(app);
+      }
       refDoc = doc(db, "resumen_ejecutivo", "ultimo_calculo");
 
       $("form-entrar").addEventListener("submit", entrar);
