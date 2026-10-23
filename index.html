@@ -324,6 +324,41 @@
     .board-filtros label { font-weight: 900; font-size: 14px; }
     .board-filtros select { font: inherit; font-weight: 900; color: var(--verde); border: none; background: transparent; cursor: pointer; max-width: 260px; }
     .board-fecha { font-weight: 900; font-size: 14px; }
+    .btn-lineas { background: #fff7ed; color: #9a3412; border: 2px solid #f59e0b; border-radius: 8px; padding: 6px 10px;
+                  font: 900 12px 'Segoe UI', Arial, sans-serif; cursor: pointer; }
+    .btn-lineas:hover { background: #ffedd5; }
+    .btn-lineas[hidden] { display: none; }
+    #tv .btn-lineas { display: none; }
+    .modal-card.ancho { max-width: 760px; }
+    .ln-copiar { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+    .ln-copiar .campo { flex: 1; min-width: 200px; }
+    table.ln-tabla { width: 100%; border-collapse: collapse; }
+    table.ln-tabla th { background: #0f172a; color: #fff; font-size: 11px; text-transform: uppercase; padding: 7px 6px; text-align: left; }
+    table.ln-tabla td { padding: 5px 4px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+    table.ln-tabla input { width: 100%; font: inherit; font-size: 15px; font-weight: 700; padding: 8px; border: 2px solid #cbd5e1; border-radius: 7px; }
+    table.ln-tabla input:focus { outline: none; border-color: var(--verde); }
+    table.ln-tabla td.c-linea { width: 90px; } table.ln-tabla td.c-meta { width: 120px; } table.ln-tabla td.c-quitar { width: 44px; text-align: center; }
+    .ln-quitar { background: #fff; border: 2px solid #fecaca; color: #b91c1c; border-radius: 7px; width: 36px; height: 36px; font: 900 16px Arial, sans-serif; cursor: pointer; }
+    .ln-vacio { text-align: center; color: var(--gris); font-weight: 700; padding: 14px; }
+    .ln-meta-btn { width: 100%; background: #f0fdf4; border: 2px solid #86efac; color: #166534; border-radius: 7px; padding: 7px 6px;
+                   font: 900 12.5px 'Segoe UI', Arial, sans-serif; cursor: pointer; line-height: 1.2; }
+    .ln-meta-btn small { display: block; font-weight: 700; font-size: 10.5px; color: #4b5563; }
+    .ln-meta-btn.hoja { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
+    #modal-metas { z-index: 65; }
+    table.mt-tabla { width: 100%; border-collapse: collapse; border: 2px solid var(--texto); }
+    table.mt-tabla th { background: #e4e4e7; color: #0f172a; font-size: 12px; font-weight: 900; padding: 7px; border: 1px solid #a1a1aa; }
+    table.mt-tabla td { border: 1px solid #d4d4d8; padding: 4px 6px; text-align: center; font-weight: 900; font-size: 16px; }
+    table.mt-tabla td.hora { color: #3f3f46; }
+    table.mt-tabla input { width: 100%; max-width: 140px; text-align: center; font: inherit; font-size: 18px; font-weight: 900; padding: 6px;
+                           border: 2px solid #cbd5e1; border-radius: 7px; color: var(--verde); }
+    table.mt-tabla input:focus { outline: none; border-color: var(--verde); }
+    table.mt-tabla tr.tot td { background: #0f172a; color: #fff; }
+    .mt-llenar { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+    .mt-llenar .campo { flex: 1; min-width: 160px; }
+    .ln-nota { font-size: 12px; color: var(--gris); font-weight: 600; margin: 8px 0 0; }
+    .ln-acciones { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+    .ln-acciones .sep { flex: 1; }
+    @media (max-width: 600px) { table.ln-tabla td.c-meta { width: 104px; } table.ln-tabla td.c-linea { width: 70px; } }
     .board-fecha b { color: var(--verde); }
     .board-fecha.viejo b { color: var(--rojo); }
     table.board { border: 2px solid var(--texto); }
@@ -569,6 +604,7 @@
       <div class="board-filtros">
         <label>ÁREA: <select id="sel-area"></select></label>
         <label>TURNO: <select id="sel-turno"></select></label>
+        <button type="button" class="btn-lineas" id="btn-lineas" hidden title="Qué líneas trabajan este turno y quién las supervisa">Líneas y supervisores</button>
         <div class="board-fecha" id="board-fecha"></div>
       </div>
       <div class="tabla-wrap" id="board"><div class="vacio">Cargando…</div></div>
@@ -694,6 +730,57 @@
           <button type="submit" class="btn-prim" id="cap-guardar">Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-lineas" hidden>
+    <div class="modal-card ancho" role="dialog" aria-modal="true" aria-labelledby="ln-titulo">
+      <h3 id="ln-titulo">Líneas y supervisores del turno</h3>
+      <div class="modal-sub" id="ln-sub"></div>
+      <div class="ln-copiar">
+        <label class="campo">Copiar las líneas de otro turno <select id="ln-de"></select></label>
+        <button type="button" class="btn-sec" id="ln-copiar">Copiar</button>
+      </div>
+      <div class="tabla-wrap">
+        <table class="ln-tabla">
+          <thead><tr><th>Línea</th><th>Supervisor</th><th>Metas</th><th></th></tr></thead>
+          <tbody id="ln-filas"></tbody>
+        </table>
+      </div>
+      <datalist id="ln-sups"></datalist>
+      <button type="button" class="btn-sec" id="ln-agregar" style="margin-top:10px;">+ Agregar línea</button>
+      <p class="ln-nota">Toca la meta de una línea para ponerla hora por hora. Si no la pones, se usa la meta configurada en la hoja para esa línea. Para que un supervisor capture, su usuario debe tener esa línea (Administración).</p>
+      <p class="login-msg" id="ln-msg"></p>
+      <div class="ln-acciones">
+        <button type="button" class="btn-sec" id="ln-hoja" title="Quita lo que pusiste aquí y vuelve a usar la hoja Config_Lineas_Produccion">Volver a la hoja</button>
+        <span class="sep"></span>
+        <button type="button" class="btn-sec" id="ln-cancelar">Cancelar</button>
+        <button type="button" class="btn-prim" id="ln-guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-metas" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mt-titulo">
+      <h3 id="mt-titulo">Metas por hora</h3>
+      <div class="modal-sub" id="mt-sub"></div>
+      <div class="mt-llenar">
+        <label class="campo">Llenar todas las horas con <input id="mt-todas" type="number" inputmode="numeric" min="0" max="100000" placeholder="Ej. 120"></label>
+        <button type="button" class="btn-sec" id="mt-aplicar">Aplicar</button>
+      </div>
+      <div class="tabla-wrap">
+        <table class="mt-tabla">
+          <thead><tr><th colspan="2">HORA</th><th>META (piezas)</th></tr></thead>
+          <tbody id="mt-filas"></tbody>
+        </table>
+      </div>
+      <p class="ln-nota">Las horas de media hora (ej. 15:00 - 15:30) se llenan con la mitad al usar «Aplicar». Puedes cambiar cualquier hora a mano.</p>
+      <p class="login-msg" id="mt-msg"></p>
+      <div class="modal-botones">
+        <button type="button" class="btn-sec" id="mt-hoja" title="Quitar estas metas y usar las de la hoja">Usar la hoja</button>
+        <button type="button" class="btn-sec" id="mt-cancelar">Cancelar</button>
+        <button type="button" class="btn-prim" id="mt-listo">Listo</button>
+      </div>
     </div>
   </div>
 
@@ -1364,8 +1451,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         let fin = (+m[3]) * 60 + (+m[4]);
         if (fin <= ini) fin += 1440;
         for (let t = ini; t < fin && filas.length < 24; t += 60) {
-          filas.push({ ini: aHora(t), fin: aHora(Math.min(t + 60, fin)), iniAbs: t, idx: ((Math.floor((t - 420) / 60) % 24) + 24) % 24 });
+          filas.push({ ini: aHora(t), fin: aHora(Math.min(t + 60, fin)), iniAbs: t < 420 ? t + 1440 : t, idx: ((Math.floor((t - 420) / 60) % 24) + 24) % 24 });
         }
+        if (filas.length && primeraFilaExtra(turno)) filas[0].idx += 24;
       }
       if (!filas.length) HORAS_BOARD.forEach(([a, b], h) => filas.push({ ini: a, fin: b, iniAbs: aMin(a), idx: h }));
       return filas;
@@ -1381,6 +1469,99 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         }
       }
       return base;
+    }
+
+    // "D / 07:00 - 15:30 / LS" -> { ini: 420, fin: 930 }
+    function rangoTurno(turno) {
+      const m = String(turno || "").match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (!m) return null;
+      const ini = (+m[1]) * 60 + (+m[2]);
+      let fin = (+m[3]) * 60 + (+m[4]);
+      if (fin <= ini) fin += 1440;
+      return { ini, fin };
+    }
+    // E (15:30-23:30) empieza en la misma hora en que termina D (15:00-15:30): su primera fila usa 24 + hora
+    // para no pisar la captura de D cuando la misma línea trabaja los dos turnos. Igual que en Apps Script.
+    function primeraFilaExtra(turno) {
+      const r = rangoTurno(turno);
+      if (!r || r.ini % 60 === 0) return false;
+      return ((pizarronActual && pizarronActual.catalogos && pizarronActual.catalogos.turnos) || []).some((u) => {
+        const q = rangoTurno(u);
+        return q && q.ini % 60 === 0 && q.fin % 60 !== 0 && q.fin % 1440 === r.ini % 1440;
+      });
+    }
+    const durFila = (f) => ((aMin(f.fin) - aMin(f.ini)) + 1440) % 1440 || 60;
+
+    // ---------- Día productivo de cada turno ----------
+    // El día va de 07:00 a 07:00. Un turno se ve con la fecha en que EMPEZÓ: F (23:30-07:00) a las 3 a.m. es el de ayer.
+    // Se puede capturar hasta las 9:00 del día siguiente (igual que en Apps Script).
+    const LIMITE_CAPTURA = 1440 + 420 + 120;
+    const fechaDMY = (d) => pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear();
+    const fechaISO = (d) => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    function instanciaTurno(turno) {
+      const filas = horasDeTurno(turno);
+      const ahora = new Date(), m = ahora.getHours() * 60 + ahora.getMinutes();
+      const ini = filas.length ? filas[0].iniAbs : 420;
+      const ult = filas[filas.length - 1];
+      const fin = ult ? ult.iniAbs + durFila(ult) : 960;
+      const dias = (m >= ini - MINUTOS_ANTES) ? 0 : 1;           // ¿ya empezó hoy? si no, el que empezó ayer
+      const nowRel = m + dias * 1440;
+      const d = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - dias, 12);
+      return { fecha: fechaDMY(d), fechaId: fechaISO(d), nowRel, ayer: dias === 1,
+               capturable: nowRel < LIMITE_CAPTURA, enCurso: nowRel >= ini - MINUTOS_ANTES && nowRel < fin };
+    }
+    const kCap = (fechaId, linea, idx) => fechaId + "_" + String(linea) + "_" + idx;
+
+    // ---------- Líneas y supervisores de cada turno ----------
+    // config/asignaciones (lo edita el ADMIN aquí) > hoja Config_Lineas_Produccion (una línea, un turno)
+    let asignacionesConfig = {};
+    let instanciaActual = null, areaActual = "", ultimoAuto = "";
+    function listaTurnos() {
+      const p = pizarronActual || {};
+      const vistos = new Set(), lista = [];
+      const add = (t) => { t = String(t || "").trim(); if (t && !vistos.has(norm(t))) { vistos.add(norm(t)); lista.push(t); } };
+      ((p.catalogos && p.catalogos.turnos) || []).forEach(add);
+      Object.values(asignacionesConfig).forEach((a) => add(a && a.turno));
+      (p.lineas || []).forEach((l) => add(l.turno));
+      return lista;
+    }
+    function definicionTurno(turno) {        // [{ linea, area, supervisor, meta }] sin datos de producción
+      const p = pizarronActual || {};
+      const a = asignacionesConfig[claveTurno(turno)];
+      if (a && Array.isArray(a.lineas)) {
+        return a.lineas.map((x) => ({ linea: String(x.linea), area: String(x.area || (p.base && p.base[x.linea] && p.base[x.linea].area) || ""),
+                                      supervisor: String(x.supervisor || ""), meta: parseInt(x.meta, 10) || 0,
+                                      metas: Array.isArray(x.metas) ? x.metas.map((n) => (n === null || n === "" || n === undefined) ? null : (parseInt(n, 10) || 0)) : null }));
+      }
+      return (p.lineas || []).filter((l) => norm(l.turno) === norm(turno))
+        .map((l) => ({ linea: String(l.linea), area: String(l.area || ""), supervisor: String(l.supervisor || ""), meta: 0, metas: null }));
+    }
+    function lineasDelTurno(turno, area) {   // area vacía = todas
+      const p = pizarronActual;
+      if (!p) return [];
+      let lista = definicionTurno(turno);
+      if (area) lista = lista.filter((x) => norm(x.area) === norm(area));
+      const filas = horasDeTurno(turno);
+      const inst = instanciaTurno(turno);
+      return lista.map((x) => {
+        const b = (p.base && p.base[x.linea]) || (p.lineas || []).find((l) => String(l.linea) === x.linea) || {};
+        const metas = {};
+        filas.forEach((f, pos) => { metas[f.idx] = metaDeFila(x, f, pos, filas.length, b.metas); });
+        const r = (p.reales && p.reales[inst.fecha] && p.reales[inst.fecha][x.linea])
+               || (inst.fecha === p.fecha ? (p.lineas || []).find((l) => String(l.linea) === x.linea) : null) || {};
+        return { ...x, turno, metas, real: r.real || [], det: r.det || [], fechaId: inst.fechaId, fecha: inst.fecha };
+      });
+    }
+    // Meta de una fila: la que puso el ADMIN hora por hora > meta por hora (proporcional si la fila es de media hora) > la hoja
+    function metaDeFila(x, f, pos, nFilas, metasHoja) {
+      if (Array.isArray(x.metas) && x.metas.length === nFilas && x.metas[pos] !== null && x.metas[pos] !== undefined) return parseInt(x.metas[pos], 10) || 0;
+      if (x.meta > 0) return Math.round(x.meta * durFila(f) / 60);
+      return parseInt(metasHoja?.[f.idx % 24], 10) || 0;
+    }
+    function todosLosPuestos() {             // cada línea en cada turno que trabaja
+      const lista = [];
+      listaTurnos().forEach((t) => lineasDelTurno(t, "").forEach((l) => lista.push(l)));
+      return lista;
     }
 
     // Doble clic (o doble toque en el celular) sobre una hora: un ADMIN la cambia
@@ -1430,8 +1611,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
     }
 
-    function llenarSelect(sel, opciones, valor) {
-      sel.replaceChildren(...opciones.map((o) => { const op = el("option", null, o); op.value = o; return op; }));
+    function llenarSelect(sel, opciones, valor, texto) {
+      sel.replaceChildren(...opciones.map((o) => { const op = el("option", null, texto ? texto(o) : o); op.value = o; return op; }));
       sel.value = valor;
     }
 
@@ -1443,12 +1624,10 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const cont = $("board");
       if (!p) { vacio(cont, "El pizarrón todavía no se publica. Ejecuta publicarResumenEnFirestore en Apps Script."); return; }
       if (p.error) { vacio(cont, "No se pudo armar el pizarrón: " + p.error); return; }
-      const todas = Array.isArray(p.lineas) ? p.lineas.filter((l) => l && l.linea !== undefined) : [];
-
       // Catálogos completos (Log_Areas y Log_Turnos), igual que el pizarrón de la app.
       const cat = p.catalogos || {};
       const areas = (Array.isArray(cat.areas) && cat.areas.length) ? cat.areas.map(String)
-                  : [...new Set(todas.map((l) => String(l.area || "")))];
+                  : [...new Set((p.lineas || []).map((l) => String(l.area || "")).filter(Boolean))];
       const pref = leerPref();
       const selArea = $("sel-area"), selTurno = $("sel-turno");
 
@@ -1456,34 +1635,39 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (!areas.some((a) => norm(a) === norm(area))) area = areas.find((a) => norm(a) === "DRYERS") || areas[0] || "";
       llenarSelect(selArea, areas, area);
 
-      const delArea = todas.filter((l) => norm(l.area) === norm(area));
-      const turnos = (Array.isArray(cat.turnos) && cat.turnos.length) ? cat.turnos.map(String)
-                   : [...new Set(delArea.map((l) => String(l.turno || "")))];
+      // El turno se cambia solo según la hora (D -> E -> F...). Si eliges otro a mano, se respeta hasta el siguiente cambio de turno.
+      const turnos = listaTurnos();
+      const cuantas = {};
+      turnos.forEach((t) => { cuantas[t] = lineasDelTurno(t, area).length; });
+      const enCurso = turnos.filter((t) => cuantas[t] > 0 && instanciaTurno(t).enCurso).sort((a, b) => cuantas[b] - cuantas[a])[0] || "";
       let turno = selTurno.value || pref.turno;
-      if (!turnos.some((t) => norm(t) === norm(turno))) {
-        // Sin preferencia: el turno con más líneas configuradas en esa área
-        const conteo = {};
-        delArea.forEach((l) => { conteo[norm(l.turno)] = (conteo[norm(l.turno)] || 0) + 1; });
-        turno = [...turnos].sort((a, b) => (conteo[norm(b)] || 0) - (conteo[norm(a)] || 0))[0] || "";
-      }
-      llenarSelect(selTurno, turnos, turno);
+      const claveAuto = area + "|" + enCurso;
+      if (enCurso && claveAuto !== ultimoAuto) turno = enCurso;
+      ultimoAuto = claveAuto;
+      if (!turnos.some((t) => norm(t) === norm(turno))) turno = enCurso || [...turnos].sort((a, b) => cuantas[b] - cuantas[a])[0] || "";
+      llenarSelect(selTurno, turnos, turno, (t) => t + (enCurso && norm(t) === norm(enCurso) ? "  (en curso)" : ""));
       guardarPref({ area, turno });
       turnoActual = turno;
+      areaActual = area;
       horasActuales = horasDeTurno(turno);
       const esAdminHoras = perfilActual?.rol === "ADMIN";
+      $("btn-lineas").hidden = !esAdminHoras;
 
-      const lineas = delArea.filter((l) => norm(l.turno) === norm(turno));
+      const inst = instanciaTurno(turno);
+      instanciaActual = inst;
+      const lineas = lineasDelTurno(turno, area);
+      const esHoy = inst.capturable;           // se puede capturar (el día de este turno no ha cerrado)
 
-      // Fecha del cálculo
-      const hoy = fechaHoyCliente();
-      const esHoy = p.fecha === hoy;
+      // Fecha del turno: el de noche que empezó ayer se sigue viendo (y capturando) en la madrugada
       const caja = $("board-fecha");
-      caja.replaceChildren(document.createTextNode("FECHA: "), el("b", null, p.fecha || "—"));
-      caja.classList.toggle("viejo", !esHoy);
-      if (!esHoy) caja.appendChild(document.createTextNode(" · no es el día de hoy"));
+      caja.replaceChildren(document.createTextNode("FECHA: "), el("b", null, inst.fecha));
+      const sinActualizar = p.fecha !== fechaHoyCliente();
+      caja.classList.toggle("viejo", sinActualizar || !inst.capturable);
+      if (!inst.capturable) caja.appendChild(document.createTextNode(" · ese turno ya cerró"));
+      else if (inst.ayer) caja.appendChild(document.createTextNode(" · turno que empezó ayer"));
+      if (sinActualizar) caja.appendChild(document.createTextNode(" · datos sin actualizar"));
 
-      const ahora = new Date();
-      const minutoAhora = ahora.getHours() * 60 + ahora.getMinutes();
+      const minutoAhora = inst.nowRel;
 
       const t = el("table", "board");
       t.style.minWidth = Math.max(700, 360 + lineas.length * 120) + "px";
@@ -1528,7 +1712,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           metaTurnoLinea[i] += metaL;
           let v = Array.isArray(l.real) ? l.real[idx] : null;
           // Capturas hechas desde esta página que todavía no llegan a la hoja (o que fueron rechazadas)
-          const cap = esHoy ? capturasHoy.get(String(l.linea) + "_" + idx) : null;
+          const cap = esHoy ? capturasHoy.get(kCap(inst.fechaId, l.linea, idx)) : null;
           let marca = "", aviso = "";
           if (cap && cap.estado === "pendiente") { v = cap.real; marca = "pend"; aviso = "Guardado, pasando a la hoja…"; }
           else if (cap && cap.estado === "rechazado") { marca = "rech"; aviso = "Captura rechazada: " + (cap.motivo || ""); }
@@ -1628,7 +1812,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           : "Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
         piezas.push(el("div", "ayuda-captura", txt));
       }
-      piezas.push(lineas.length ? t : el("div", "vacio", "No hay líneas con supervisor configuradas para " + area + " · " + turno + "."));
+      piezas.push(lineas.length ? t : el("div", "vacio", "No hay líneas en " + area + " · " + turno + "." +
+        (esAdminHoras ? " Usa «Líneas y supervisores» para agregarlas." : " El administrador las agrega desde «Líneas y supervisores».")));
       cont.replaceChildren(...piezas);
     }
 
@@ -1852,9 +2037,17 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         if (pizarronActual) pintarPizarron();
       }, (err) => console.warn("[Horarios]", err));
     }
+    let cancelarAsignaciones = null;
+    function escucharAsignaciones() {
+      if (cancelarAsignaciones) cancelarAsignaciones();
+      cancelarAsignaciones = onSnapshot(doc(db, "config", "asignaciones"), (snap) => {
+        asignacionesConfig = (snap.exists() && snap.data().porTurno) || {};
+        if (pizarronActual) pintarPizarron();
+      }, (err) => console.warn("[Asignaciones]", err));
+    }
     function detenerEscuchas() {
-      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes].forEach((f) => { if (f) f(); });
-      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = null;
+      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes, cancelarAsignaciones].forEach((f) => { if (f) f(); });
+      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = cancelarAsignaciones = null;
       pendientesAntes = -1;
     }
     const detener = detenerEscuchas;
@@ -2030,6 +2223,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         iniciar();
         escucharCapturas();
         escucharHorarios();
+        escucharAsignaciones();
         actualizarBotonAvisos();
         if (instalarEvento) $("btn-instalar").hidden = false;
         const ver = new URLSearchParams(location.search).get("ver");
@@ -2091,9 +2285,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function escucharCapturas() {
       if (cancelarCapturas) cancelarCapturas();
       fechaCapturas = hoyISO();
-      cancelarCapturas = onSnapshot(query(collection(db, "capturas"), where("fechaId", "==", fechaCapturas)), (snap) => {
+      const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+      // hoy y ayer: el turno de noche que empezó ayer se sigue capturando en la madrugada
+      cancelarCapturas = onSnapshot(query(collection(db, "capturas"), where("fechaId", "in", [fechaCapturas, fechaISO(ayer)])), (snap) => {
         capturasHoy.clear();
-        snap.forEach((d) => { const c = d.data(); capturasHoy.set(String(c.linea) + "_" + c.horaIndex, c); });
+        snap.forEach((d) => { const c = d.data(); capturasHoy.set(kCap(c.fechaId, c.linea, c.horaIndex), c); });
         if (pizarronActual) pintarPizarron();
       }, (err) => console.warn("[Capturas]", err));
     }
@@ -2135,21 +2331,23 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function faltantes() {
       const p = pizarronActual;
       if (!p || !perfilActual || soloVer(perfilActual.rol) || p.fecha !== fechaHoyCliente()) return [];
-      const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
       const mias = (perfilActual.lineas || []).map(String);
       const lista = [];
-      (p.lineas || []).forEach((l) => {
-        if (perfilActual.rol !== "ADMIN" && !mias.includes(String(l.linea))) return;
-        horasDeTurno(l.turno).forEach((f) => {
-          const meta = parseInt(l.metas?.[f.idx], 10) || 0;
-          if (meta <= 0) return;
-          const dur = ((aMin(f.fin) - aMin(f.ini)) + 1440) % 1440 || 60;
-          const finAbs = f.iniAbs + dur;
-          if (f.iniAbs >= 1440 || min < finAbs + MIN_RECORDATORIO) return;          // aún no pasan 10 min de que terminó
-          const r = l.real?.[f.idx];
-          const cap = capturasHoy.get(String(l.linea) + "_" + f.idx);
-          if ((r !== null && r !== undefined && r !== "") || (cap && cap.estado !== "rechazado")) return;
-          lista.push({ l, f, clave: p.fecha + "_" + l.linea + "_" + f.idx });
+      listaTurnos().forEach((turno) => {
+        const inst = instanciaTurno(turno);
+        if (!inst.capturable) return;
+        const filas = horasDeTurno(turno);
+        lineasDelTurno(turno, "").forEach((l) => {
+          if (perfilActual.rol !== "ADMIN" && !mias.includes(String(l.linea))) return;
+          filas.forEach((f) => {
+            const meta = parseInt(l.metas?.[f.idx], 10) || 0;
+            if (meta <= 0) return;
+            if (inst.nowRel < f.iniAbs + durFila(f) + MIN_RECORDATORIO) return;          // aún no pasan 10 min de que terminó
+            const r = l.real?.[f.idx];
+            const cap = capturasHoy.get(kCap(inst.fechaId, l.linea, f.idx));
+            if ((r !== null && r !== undefined && r !== "") || (cap && cap.estado !== "rechazado")) return;
+            lista.push({ l, f, turno, clave: inst.fecha + "_" + l.linea + "_" + f.idx });
+          });
         });
       });
       return lista;
@@ -2173,7 +2371,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           const li = el("li");
           li.append(el("span", null, "Línea " + l.linea + " · " + f.ini + " – " + f.fin));
           const b = el("button", null, "Capturar"); b.type = "button";
-          b.addEventListener("click", () => { irALinea(l.linea, f.idx); });
+          b.addEventListener("click", () => { irALinea(l.linea, f.idx, l.turno); });
           li.appendChild(b);
           return li;
         }));
@@ -2206,13 +2404,18 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
     // ---------- QR POR LÍNEA ----------
     // El QR abre  .../workpulse-live/?linea=7 : después de entrar, se va a esa línea y abre la captura de la hora que toca.
-    function irALinea(linea, idxPreferido) {
+    function irALinea(linea, idxPreferido, turnoPreferido) {
       const p = pizarronActual;
       if (!p) return false;
-      const l = (p.lineas || []).find((x) => String(x.linea) === String(linea));
-      if (!l) { toast("La Línea " + linea + " no está en el pizarrón de hoy.", 5000); return true; }
-      $("sel-area").value = l.area; pintarPizarron();
-      $("sel-turno").value = l.turno; pintarPizarron();
+      // El turno de esa línea: el que pidieron, si no el que va en curso, si no el primero que la tenga
+      const puestos = todosLosPuestos().filter((x) => String(x.linea) === String(linea));
+      const l0 = puestos.find((x) => turnoPreferido && norm(x.turno) === norm(turnoPreferido))
+              || puestos.find((x) => instanciaTurno(x.turno).enCurso) || puestos[0];
+      if (!l0) { toast("La Línea " + linea + " no está asignada a ningún turno.", 5000); return true; }
+      $("sel-area").value = l0.area; pintarPizarron();
+      $("sel-turno").value = l0.turno; pintarPizarron();
+      const l = lineasDelTurno(l0.turno, l0.area).find((x) => String(x.linea) === String(linea)) || l0;
+      const inst = instanciaTurno(l0.turno);
       $("recordatorio").hidden = true;
       $("sec-board").scrollIntoView({ behavior: "smooth", block: "start" });
       // resaltar la columna de la línea: en el encabezado y en "totales/pronóstico" HORA ocupa 1 celda; en las filas, 2
@@ -2223,13 +2426,13 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         if (celda) { celda.classList.add("resaltar"); setTimeout(() => celda.classList.remove("resaltar"), 4000); }
       });
       if (!puedeEditarLinea(l.linea)) { toast("Puedes ver la Línea " + l.linea + ", pero no capturar en ella.", 4000); return true; }
-      const ahora = new Date(), min = ahora.getHours() * 60 + ahora.getMinutes();
-      const abiertas = horasActuales.filter((f) => min >= f.iniAbs - MINUTOS_ANTES);
-      const vacia = (f) => { const r = l.real?.[f.idx]; const c = capturasHoy.get(String(l.linea) + "_" + f.idx); return (r === null || r === undefined || r === "") && !(c && c.estado === "pendiente"); };
+      if (!inst.capturable) { toast("Ese turno ya cerró.", 4000); return true; }
+      const abiertas = horasActuales.filter((f) => inst.nowRel >= f.iniAbs - MINUTOS_ANTES);
+      const vacia = (f) => { const r = l.real?.[f.idx]; const c = capturasHoy.get(kCap(inst.fechaId, l.linea, f.idx)); return (r === null || r === undefined || r === "") && !(c && c.estado === "pendiente"); };
       let fila = idxPreferido !== undefined ? abiertas.find((f) => f.idx === idxPreferido) : null;
       fila = fila || abiertas.filter(vacia)[0] || abiertas[abiertas.length - 1];
       if (!fila) { toast("Todavía no empieza la primera hora del turno.", 4000); return true; }
-      const cap = capturasHoy.get(String(l.linea) + "_" + fila.idx);
+      const cap = capturasHoy.get(kCap(inst.fechaId, l.linea, fila.idx));
       setTimeout(() => abrirCaptura(l, fila.idx, cap), 450);
       return true;
     }
@@ -2256,7 +2459,13 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       win.document.write("<p style='font-family:sans-serif;text-align:center;padding-top:20vh'>Generando códigos QR…</p>");
       try {
         await cargarLibQR();
-        const lineas = (pizarronActual?.lineas || []).map((l) => ({ linea: String(l.linea), area: l.area || "", sup: l.supervisor || "" }))
+        const unicas = new Map();
+        todosLosPuestos().forEach((l) => {
+          const k = String(l.linea);
+          if (!unicas.has(k)) unicas.set(k, { linea: k, area: l.area || "", sup: l.supervisor || "" });
+          else if (l.supervisor && !unicas.get(k).sup.includes(l.supervisor)) unicas.get(k).sup += " / " + l.supervisor;
+        });
+        const lineas = [...unicas.values()]
           .sort((a, b) => (parseInt(a.linea, 10) || 0) - (parseInt(b.linea, 10) || 0));
         const base = location.origin + location.pathname.replace(/[^/]*$/, "");
         const tarjetas = lineas.map((x) => {
@@ -2480,7 +2689,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function abrirCaptura(l, idx, cap) {
       const fila = horasActuales.find((f) => f.idx === idx) || { ini: aHora(420 + idx * 60), fin: aHora(480 + idx * 60) };
       const ini = fila.ini, fin = fila.fin;
-      capturaActual = { linea: String(l.linea), idx };
+      const inst = instanciaTurno(l.turno || turnoActual);
+      capturaActual = { linea: String(l.linea), idx, fechaId: l.fechaId || inst.fechaId, fecha: l.fecha || inst.fecha };
       $("cap-titulo").textContent = "Línea " + l.linea + " · " + ini + " – " + fin;
       $("cap-sub").textContent = "Meta de la hora: " + (parseInt(l.metas?.[idx], 10) || 0) + " pzs · Supervisor: " + (l.supervisor || "—");
       const base = (cap && cap.estado === "pendiente") ? cap : { real: l.real?.[idx], ...(l.det?.[idx] || {}) };
@@ -2513,8 +2723,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           uid: auth.currentUser.uid,
           usuario: perfilActual.usuario,
           linea: capturaActual.linea,
-          fechaId: hoyISO(),
-          fecha: fechaHoyCliente(),
+          fechaId: capturaActual.fechaId,
+          fecha: capturaActual.fecha,
           horaIndex: capturaActual.idx,
           real: entero("cap-real", 100000, "la producción real", true),
           estado: "pendiente",
@@ -2744,13 +2954,199 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }
     }
 
+    // ---------- Editor: líneas y supervisores del turno (solo ADMIN) ----------
+    let lnTurno = "", lnArea = "";
+    function filaEditor(x) {
+      const tr = el("tr");
+      const mk = (cls, attrs) => { const td = el("td", cls); const i = document.createElement("input"); Object.assign(i, attrs); td.appendChild(i); tr.appendChild(td); return i; };
+      mk("c-linea", { value: x.linea || "", maxLength: 5, placeholder: "Ej. 7", className: "ln-linea", autocapitalize: "characters" });
+      const sup = mk("", { value: x.supervisor || "", maxLength: 80, placeholder: "Nombre del supervisor", className: "ln-sup" });
+      sup.setAttribute("list", "ln-sups");
+      tr.querySelector(".ln-linea").addEventListener("change", () => pintarBotonMeta(tr));
+      tr._meta = x.meta || 0;
+      tr._metas = Array.isArray(x.metas) ? x.metas.slice() : null;
+      const tdM = el("td", "c-meta"); const bm = el("button", "ln-meta-btn"); bm.type = "button";
+      bm.addEventListener("click", () => abrirMetas(tr)); tdM.appendChild(bm); tr.appendChild(tdM);
+      pintarBotonMeta(tr);
+      const td = el("td", "c-quitar"); const b = el("button", "ln-quitar", "×"); b.type = "button"; b.title = "Quitar línea de este turno";
+      b.addEventListener("click", () => { tr.remove(); revisarVacio(); }); td.appendChild(b); tr.appendChild(td);
+      return tr;
+    }
+    // ---------- Pre-pizarrón: meta de cada hora de una línea ----------
+    let mtFila = null;
+    function filasMetas(tr) {              // metas que se verían en el pizarrón para esa línea en el turno que se edita
+      const filas = horasDeTurno(lnTurno);
+      const linea = tr.querySelector(".ln-linea").value.trim().toUpperCase();
+      const b = (pizarronActual?.base && pizarronActual.base[linea]) || {};
+      const x = { meta: tr._meta, metas: tr._metas };
+      return filas.map((f, pos) => ({ f, meta: metaDeFila(x, f, pos, filas.length, b.metas) }));
+    }
+    function pintarBotonMeta(tr) {
+      const bm = tr.querySelector(".ln-meta-btn");
+      const total = filasMetas(tr).reduce((a, r) => a + r.meta, 0);
+      const propia = (Array.isArray(tr._metas) && tr._metas.length) || tr._meta > 0;
+      bm.className = "ln-meta-btn" + (propia ? "" : " hoja");
+      bm.replaceChildren(document.createTextNode(total.toLocaleString("es-MX") + " pzs"),
+                         el("small", null, propia ? "por hora · editar" : "de la hoja · editar"));
+    }
+    function abrirMetas(tr) {
+      const linea = tr.querySelector(".ln-linea").value.trim().toUpperCase();
+      if (!linea) { $("ln-msg").textContent = "Primero escribe el número de la línea."; return; }
+      mtFila = tr;
+      $("mt-titulo").textContent = "Metas por hora · Línea " + linea;
+      $("mt-sub").textContent = lnTurno + " · Área " + lnArea;
+      $("mt-todas").value = tr._meta > 0 ? String(tr._meta) : "";
+      $("mt-msg").textContent = "";
+      const tb = $("mt-filas");
+      tb.replaceChildren(...filasMetas(tr).map(({ f, meta }) => {
+        const r = el("tr");
+        const inp = document.createElement("input");
+        Object.assign(inp, { type: "number", min: 0, max: 100000, step: 1, inputMode: "numeric", value: String(meta), className: "mt-in" });
+        inp.dataset.dur = String(durFila(f));
+        inp.addEventListener("input", totalMetas);
+        const td = el("td"); td.appendChild(inp);
+        r.append(el("td", "hora", f.ini), el("td", "hora", f.fin), td);
+        return r;
+      }));
+      const tot = el("tr", "tot"); const t1 = el("td", null, "TOTAL DEL TURNO"); t1.colSpan = 2;
+      tot.append(t1, el("td", null, "")); tot.id = "mt-total"; tb.appendChild(tot);
+      totalMetas();
+      $("modal-metas").hidden = false;
+      const primero = tb.querySelector("input"); if (primero) primero.focus();
+    }
+    function totalMetas() {
+      const t = [...$("mt-filas").querySelectorAll(".mt-in")].reduce((a, i) => a + (parseInt(i.value, 10) || 0), 0);
+      const tot = $("mt-total"); if (tot) tot.lastChild.textContent = t.toLocaleString("es-MX") + " pzs";
+    }
+    $("mt-aplicar").addEventListener("click", () => {
+      const n = Number($("mt-todas").value);
+      if (!Number.isInteger(n) || n < 0) { $("mt-msg").textContent = "Escribe un número entero de piezas por hora."; return; }
+      $("mt-filas").querySelectorAll(".mt-in").forEach((i) => { i.value = String(Math.round(n * (parseInt(i.dataset.dur, 10) || 60) / 60)); });
+      $("mt-msg").textContent = ""; totalMetas();
+    });
+    $("mt-cancelar").addEventListener("click", () => { $("modal-metas").hidden = true; mtFila = null; });
+    $("mt-hoja").addEventListener("click", () => {
+      if (!mtFila) return;
+      mtFila._meta = 0; mtFila._metas = null; pintarBotonMeta(mtFila);
+      $("modal-metas").hidden = true; mtFila = null;
+    });
+    $("mt-listo").addEventListener("click", () => {
+      if (!mtFila) return;
+      const valores = [];
+      for (const i of $("mt-filas").querySelectorAll(".mt-in")) {
+        const t = i.value.trim();
+        const n = t === "" ? 0 : Number(t);
+        if (!Number.isInteger(n) || n < 0 || n > 100000) { $("mt-msg").textContent = "Cada meta debe ser un número entero de 0 a 100000."; i.focus(); return; }
+        valores.push(n);
+      }
+      mtFila._metas = valores;
+      const todas = Number($("mt-todas").value);
+      mtFila._meta = Number.isInteger(todas) && todas > 0 ? todas : 0;
+      pintarBotonMeta(mtFila);
+      $("modal-metas").hidden = true; mtFila = null;
+    });
+
+    function revisarVacio() {
+      const tb = $("ln-filas");
+      const vacio = tb.querySelector(".ln-vacio-fila");
+      const hay = tb.querySelectorAll("tr:not(.ln-vacio-fila)").length > 0;
+      if (!hay && !vacio) { const tr = el("tr", "ln-vacio-fila"); const td = el("td", "ln-vacio", "Sin líneas en este turno. Agrega una o copia las de otro turno."); td.colSpan = 4; tr.appendChild(td); tb.appendChild(tr); }
+      if (hay && vacio) vacio.remove();
+    }
+    function abrirEditorLineas() {
+      if (perfilActual?.rol !== "ADMIN" || !pizarronActual) return;
+      lnTurno = turnoActual; lnArea = areaActual;
+      $("ln-titulo").textContent = "Líneas y supervisores · " + lnTurno;
+      const deHoja = !asignacionesConfig[claveTurno(lnTurno)];
+      $("ln-sub").textContent = "Área " + lnArea + (deHoja ? " · ahora se toma de la hoja Config_Lineas_Produccion" : " · configurado desde aquí");
+      $("ln-hoja").hidden = deHoja;
+      const sups = new Set(((pizarronActual.catalogos && pizarronActual.catalogos.supervisores) || []).map(String));
+      todosLosPuestos().forEach((l) => { if (l.supervisor) sups.add(l.supervisor); });
+      $("ln-sups").replaceChildren(...[...sups].sort().map((n) => { const o = document.createElement("option"); o.value = n; return o; }));
+      $("ln-de").replaceChildren(...listaTurnos().filter((t) => norm(t) !== norm(lnTurno)).map((t) => {
+        const n = definicionTurno(t).filter((x) => norm(x.area) === norm(lnArea)).length;
+        const o = el("option", null, t + " (" + n + " líneas)"); o.value = t; return o;
+      }));
+      $("ln-filas").replaceChildren(...definicionTurno(lnTurno).filter((x) => norm(x.area) === norm(lnArea)).map(filaEditor));
+      revisarVacio();
+      $("ln-msg").textContent = "";
+      $("modal-lineas").hidden = false;
+    }
+    function leerEditor() {
+      const filas = [...$("ln-filas").querySelectorAll("tr:not(.ln-vacio-fila)")];
+      const lista = [], vistas = new Set();
+      for (const tr of filas) {
+        const linea = tr.querySelector(".ln-linea").value.trim().toUpperCase().replace(/[^0-9A-Z]/g, "");
+        const supervisor = tr.querySelector(".ln-sup").value.trim().toUpperCase().slice(0, 80);
+        const propias = Array.isArray(tr._metas) && tr._metas.length;
+        if (!linea && !supervisor && !propias && !tr._meta) continue;
+        if (!linea || linea.length > 5) throw new Error("Escribe el número de cada línea (máximo 5 caracteres).");
+        if (vistas.has(linea)) throw new Error("La Línea " + linea + " está repetida.");
+        vistas.add(linea);
+        if (!supervisor) throw new Error("Falta el supervisor de la Línea " + linea + ".");
+        const fila = { linea, area: lnArea, supervisor, meta: tr._meta || 0 };
+        if (propias) fila.metas = tr._metas.slice(0, 24);
+        lista.push(fila);
+      }
+      return lista;
+    }
+    async function guardarAsignaciones(porTurno, msgOk) {
+      await setDoc(doc(db, "config", "asignaciones"), { porTurno, actualizadoEn: serverTimestamp(), actualizadoPor: perfilActual.usuario });
+      $("modal-lineas").hidden = true;
+      toast(msgOk, 4500);
+    }
+    async function guardarEditorLineas() {
+      let deEstaArea;
+      try { deEstaArea = leerEditor(); } catch (e) { $("ln-msg").textContent = e.message; return; }
+      const clave = claveTurno(lnTurno);
+      // Las líneas de las otras áreas de este turno se conservan
+      const otras = definicionTurno(lnTurno).filter((x) => norm(x.area) !== norm(lnArea))
+        .map((x) => { const o = { linea: x.linea, area: x.area, supervisor: x.supervisor, meta: x.meta || 0 }; if (Array.isArray(x.metas)) o.metas = x.metas; return o; });
+      const lineas = otras.concat(deEstaArea);
+      if (lineas.length > 80) { $("ln-msg").textContent = "Máximo 80 líneas por turno."; return; }
+      $("ln-guardar").disabled = true;
+      try {
+        await guardarAsignaciones({ ...asignacionesConfig, [clave]: { turno: lnTurno, lineas } },
+          "Guardado: " + deEstaArea.length + " línea(s) en " + lnArea + " · " + lnTurno + ".");
+      } catch (e) { $("ln-msg").textContent = "No se pudo guardar: " + mensajeAuth(e); }
+      finally { $("ln-guardar").disabled = false; }
+    }
+    $("btn-lineas").addEventListener("click", abrirEditorLineas);
+    $("ln-cancelar").addEventListener("click", () => { $("modal-lineas").hidden = true; });
+    $("ln-guardar").addEventListener("click", guardarEditorLineas);
+    $("ln-agregar").addEventListener("click", () => {
+      const tr = filaEditor({});
+      $("ln-filas").appendChild(tr); revisarVacio();
+      tr.querySelector(".ln-linea").focus();
+    });
+    $("ln-copiar").addEventListener("click", () => {
+      const de = $("ln-de").value;
+      if (!de) return;
+      const ya = new Set([...$("ln-filas").querySelectorAll(".ln-linea")].map((i) => i.value.trim().toUpperCase()));
+      let n = 0;
+      const mismasHoras = horasDeTurno(de).length === horasDeTurno(lnTurno).length;
+      definicionTurno(de).filter((x) => norm(x.area) === norm(lnArea) && !ya.has(x.linea.toUpperCase())).forEach((x) => {
+        $("ln-filas").appendChild(filaEditor({ linea: x.linea, supervisor: "", meta: x.meta, metas: mismasHoras ? x.metas : null })); n++;
+      });
+      revisarVacio();
+      $("ln-msg").textContent = n ? "Se copiaron " + n + " línea(s). Escribe el supervisor de cada una." : "No hay líneas nuevas que copiar.";
+    });
+    $("ln-hoja").addEventListener("click", async () => {
+      if (!confirm("¿Quitar lo configurado aquí para " + lnTurno + " (todas las áreas) y volver a usar la hoja?")) return;
+      const resto = { ...asignacionesConfig };
+      delete resto[claveTurno(lnTurno)];
+      try { await guardarAsignaciones(resto, "Ese turno vuelve a usar la hoja Config_Lineas_Produccion."); }
+      catch (e) { $("ln-msg").textContent = "No se pudo guardar: " + mensajeAuth(e); }
+    });
+
     // ---------- Reporte de fin de turno (correo a gerencia) ----------
     let cancelarEstadoReporte = null;
     const correoValido = (c) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c);
     function finesDeTurno() {
       const fines = new Set();
-      ((pizarronActual && pizarronActual.lineas) || []).forEach((l) => {
-        const filas = horasDeTurno(l.turno);
+      listaTurnos().forEach((t) => {
+        if (!lineasDelTurno(t, "").length) return;
+        const filas = horasDeTurno(t);
         if (filas.length) fines.add(filas[filas.length - 1].fin);
       });
       return [...fines].filter((f) => /^\d{1,2}:\d{2}$/.test(f)).sort((a, b) => {
