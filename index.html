@@ -349,6 +349,26 @@
     table.ln-tabla td.c-linea { width: 90px; } table.ln-tabla td.c-meta { width: 120px; } table.ln-tabla td.c-quitar { width: 44px; text-align: center; }
     .ln-quitar { background: #fff; border: 2px solid #fecaca; color: #b91c1c; border-radius: 7px; width: 36px; height: 36px; font: 900 16px Arial, sans-serif; cursor: pointer; }
     .ln-vacio { text-align: center; color: var(--gris); font-weight: 700; padding: 14px; }
+    /* Pantalla de licencia vencida (cubre todo) */
+    #bloqueo-sistema { position: fixed; inset: 0; z-index: 2147483600; background: #0f172a; color: #fff; display: flex;
+                       align-items: center; justify-content: center; padding: 20px; text-align: center; font-family: 'Segoe UI', Arial, sans-serif; }
+    #bloqueo-sistema[hidden] { display: none; }
+    #bloqueo-sistema .caja { max-width: 440px; background: #1e293b; border-top: 6px solid #f59e0b; border-radius: 14px; padding: 30px 26px; }
+    #bloqueo-sistema h2 { margin: 0 0 10px; font-size: 24px; color: #fbbf24; }
+    #bloqueo-sistema p { margin: 0 0 8px; font-size: 15px; line-height: 1.5; color: #e2e8f0; }
+    #bloqueo-sistema .contacto { margin-top: 14px; font-weight: 900; font-size: 16px; color: #fff; }
+    /* Aviso de licencia por vencer (barra) */
+    .aviso-lic { background: #fef3c7; border: 1.5px solid #f59e0b; color: #92400e; border-radius: 8px; padding: 8px 12px;
+                 font-weight: 800; font-size: 13px; margin-bottom: 12px; }
+    .aviso-lic[hidden] { display: none; }
+    /* Seguridad en Administración */
+    .seg-caja { border: 2px solid #fca5a5 !important; }
+    .seg-caja h3 { color: #b91c1c !important; }
+    .btn-panico { background: #b91c1c; color: #fff; border: none; border-radius: 8px; padding: 11px 14px; font: 900 13px 'Segoe UI', Arial, sans-serif;
+                  cursor: pointer; width: 100%; }
+    .btn-panico:hover { background: #991b1b; }
+    .lic-estado { font-size: 13px; font-weight: 700; color: var(--gris); margin: 10px 0 0; }
+    .lic-estado b { color: var(--texto); }
     .ln-meta-btn { width: 100%; background: #f0fdf4; border: 2px solid #86efac; color: #166534; border-radius: 7px; padding: 7px 6px;
                    font: 900 12.5px 'Segoe UI', Arial, sans-serif; cursor: pointer; line-height: 1.2; }
     .ln-meta-btn small { display: block; font-weight: 700; font-size: 10.5px; color: #4b5563; }
@@ -540,6 +560,7 @@
   </div>
 
   <main id="contenido" hidden>
+    <div class="aviso-lic" id="aviso-lic" hidden></div>
     <div id="error"></div>
 
     <section class="panel" id="panel-admin" hidden>
@@ -589,6 +610,12 @@
               <button type="button" class="btn-sec" id="rep-probar">Enviar prueba</button>
             </div>
             <p class="rep-estado" id="rep-estado"></p>
+          </div>
+          <div class="admin-caja seg-caja" style="margin-top:16px;">
+            <h3>Seguridad</h3>
+            <p class="cambio" style="text-align:left;margin:0 0 10px;">Botón de pánico: cierra la sesión de TODOS los equipos (menos el tuyo) y los obliga a volver a entrar con su contraseña. Úsalo si se pierde un equipo con sesión abierta o se filtra una contraseña.</p>
+            <button type="button" class="btn-panico" id="btn-panico">Cerrar sesión en todos los equipos</button>
+            <p class="lic-estado" id="lic-estado"></p>
           </div>
           <div class="admin-caja" style="margin-top:16px;">
             <h3>Código de registro</h3>
@@ -766,6 +793,14 @@
         <button type="button" class="btn-sec" id="ln-cancelar">Cancelar</button>
         <button type="button" class="btn-prim" id="ln-guardar">Guardar</button>
       </div>
+    </div>
+  </div>
+
+  <div id="bloqueo-sistema" hidden>
+    <div class="caja">
+      <h2>Sistema en pausa</h2>
+      <p id="bloqueo-txt">La licencia de WorkPulse venció. El sistema está en pausa; tus datos están a salvo y vuelven en cuanto se renueve.</p>
+      <p class="contacto" id="bloqueo-contacto">Contacta al proveedor.</p>
     </div>
   </div>
 
@@ -2014,6 +2049,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     let creandoPerfil = false;
     let capturaActual = null;
     const capturasHoy = new Map();
+    // Seguridad: línea base de los relojes del servidor al iniciar sesión (sin depender del reloj del equipo)
+    let baseSesionDesde = 0;     // marca "sacar de equipos" de mi perfil al entrar
+    let basePanico = 0, primeroPanico = true;   // línea base del botón de pánico
+    let licenciaActiva = true;
+    const aMillis = (v) => !v ? 0 : (v.toMillis ? v.toMillis() : (v.seconds ? v.seconds*1000 : (typeof v === 'string' ? Date.parse(v) || 0 : (v instanceof Date ? v.getTime() : 0))));
 
     const USUARIO_RE = /^[a-z0-9._-]{3,30}$/;
     const limpiarUsuario = (u) => String(u || "").trim().toLowerCase();
@@ -2047,6 +2087,48 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         if (pizarronActual) pintarPizarron();
       }, (err) => console.warn("[Horarios]", err));
     }
+    let cancelarSistema = null, cancelarLicencia = null;
+    function escucharSeguridad() {
+      if (cancelarSistema) cancelarSistema();
+      cancelarSistema = onSnapshot(doc(db, "config", "sistema"), async (snap) => {
+        const d = snap.exists() ? snap.data() : null;
+        const pd = aMillis(d && d.panicoDesde);
+        if (primeroPanico) { basePanico = pd; primeroPanico = false; return; }   // primera lectura: fija la base
+        if (pd > basePanico && (!d || d.excepto !== (perfilActual && perfilActual.uid))) {
+          mensajePendiente = "El administrador cerró la sesión de todos los equipos. Vuelve a entrar con tu contraseña.";
+          await signOut(auth);
+        }
+      }, (err) => console.warn("[Sistema]", err));
+
+      if (cancelarLicencia) cancelarLicencia();
+      cancelarLicencia = onSnapshot(doc(db, "config", "licencia"), (snap) => {
+        aplicarLicencia(snap.exists() ? snap.data() : null);
+      }, (err) => console.warn("[Licencia]", err));
+    }
+    function aplicarLicencia(lic) {
+      licenciaActiva = !lic || lic.activa !== false;
+      const bloq = $("bloqueo-sistema");
+      const contacto = (lic && lic.mensaje) ? String(lic.mensaje) : "Contacta al proveedor.";
+      if (!licenciaActiva) {
+        $("bloqueo-contacto").textContent = contacto;
+        bloq.hidden = false;
+      } else {
+        bloq.hidden = true;
+      }
+      // Aviso para el ADMIN cuando faltan pocos días
+      const aviso = $("aviso-lic");
+      const dias = lic ? Number(lic.diasRestantes) : -1;
+      if (licenciaActiva && perfilActual && perfilActual.rol === "ADMIN" && lic && dias >= 0 && dias <= 7) {
+        aviso.textContent = "La licencia vence en " + dias + " día" + (dias === 1 ? "" : "s") + ". Renueva LICENCIA_HASTA en Apps Script.";
+        aviso.hidden = false;
+      } else { aviso.hidden = true; }
+      const est = $("lic-estado");
+      if (est) {
+        if (!lic || lic.hasta === "" || dias < 0) est.innerHTML = "Licencia: <b>sin vencimiento</b>.";
+        else est.innerHTML = licenciaActiva ? "Licencia vigente hasta <b>" + lic.hasta + "</b> (" + dias + " día" + (dias === 1 ? "" : "s") + ")."
+                                            : "Licencia <b>vencida</b> el " + lic.hasta + ".";
+      }
+    }
     let cancelarAsignaciones = null;
     function escucharAsignaciones() {
       if (cancelarAsignaciones) cancelarAsignaciones();
@@ -2056,8 +2138,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }, (err) => console.warn("[Asignaciones]", err));
     }
     function detenerEscuchas() {
-      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes, cancelarAsignaciones].forEach((f) => { if (f) f(); });
-      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = cancelarAsignaciones = null;
+      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes, cancelarAsignaciones, cancelarSistema, cancelarLicencia].forEach((f) => { if (f) f(); });
+      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = cancelarAsignaciones = cancelarSistema = cancelarLicencia = null;
       pendientesAntes = -1;
     }
     const detener = detenerEscuchas;
@@ -2232,8 +2314,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         }
         if (d.rol === "PENDIENTE") { mostrarEspera(u.uid, d); return; }
         perfilActual = { uid: u.uid, ...d };
+        baseSesionDesde = aMillis(d.sesionDesde);
+        primeroPanico = true;    // la primera lectura de config/sistema fija la base
         mostrarApp();
         escucharPerfil(u.uid);
+        escucharSeguridad();
         if (d.rol === "ADMIN") escucharPendientes();
         iniciar();
         escucharCapturas();
@@ -2291,7 +2376,14 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           await signOut(auth);
           return;
         }
-        perfilActual = { uid, ...snap.data() };
+        const d2 = snap.data();
+        const sd = aMillis(d2.sesionDesde);
+        if (sd > baseSesionDesde) {   // el administrador cerró mis sesiones
+          mensajePendiente = "El administrador cerró tu sesión. Vuelve a entrar con tu contraseña.";
+          await signOut(auth);
+          return;
+        }
+        perfilActual = { uid, ...d2 };
         pintarUsuarioActual();
         if (pizarronActual) pintarPizarron();
       }, (err) => console.warn("[Perfil]", err));
@@ -2823,6 +2915,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         boton("Contraseña", () => cambiarPassword(u));
         if (!soyYo) {
           boton("Rol", () => cambiarRol(u));
+          boton("Sacar de equipos", () => sacarDeEquipos(u));
           boton(u.activo ? "Desactivar" : "Activar", () => cambiarActivo(u));
           boton("Eliminar", () => eliminarUsuario(u), "peligro");
         }
@@ -2867,6 +2960,32 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (nuevo === u.rol) return;
       if (nuevo === "SUPERVISOR" && !(u.lineas || []).length) { alert("Primero asígnale al menos una línea con el botón \"Líneas\"."); return; }
       actualizarPerfil(u, { rol: nuevo }, u.usuario + " ahora es " + nuevo);
+    }
+
+    async function botonPanico() {
+      if (perfilActual?.rol !== "ADMIN") return;
+      if (!confirm("Esto cerrará la sesión en TODOS los equipos (menos el tuyo). Todos tendrán que volver a entrar con su contraseña.\n\n¿Continuar?")) return;
+      const b = $("btn-panico"); b.disabled = true;
+      try {
+        // 1) Cierre inmediato en todas las pantallas abiertas
+        await setDoc(doc(db, "config", "sistema"), { panicoDesde: serverTimestamp(), panicoPor: perfilActual.usuario, excepto: perfilActual.uid });
+        // 2) Revocación real de las sesiones en el servidor (Apps Script invalida los tokens)
+        await addDoc(collection(db, "solicitudes"), { tipo: "panico", excepto: perfilActual.uid, creadoPor: perfilActual.usuario, creadoEn: serverTimestamp() });
+        toast("Listo: se cerró la sesión en todos los equipos. Vuelven a entrar con su contraseña.", 6000);
+      } catch (e) {
+        alert("No se pudo: " + mensajeAuth(e));
+      } finally { b.disabled = false; }
+    }
+
+    async function sacarDeEquipos(u) {
+      if (!confirm("¿Cerrar la sesión de " + u.usuario + " en todos sus equipos?\nTendrá que volver a entrar con su contraseña.")) return;
+      try {
+        await updateDoc(doc(db, "usuarios", u.uid), { sesionDesde: serverTimestamp() });   // cierre inmediato en sus pantallas
+        await addDoc(collection(db, "solicitudes"), { tipo: "revocar", uid: u.uid, usuario: u.usuario, creadoPor: perfilActual.usuario, creadoEn: serverTimestamp() });  // revoca tokens en el servidor
+        toast("Se cerró la sesión de " + u.usuario + " en todos sus equipos.", 5000);
+      } catch (e) {
+        alert("No se pudo: " + mensajeAuth(e));
+      }
     }
 
     function cambiarActivo(u) {
@@ -3310,6 +3429,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("form-codigo").addEventListener("submit", guardarCodigo);
       $("form-reporte").addEventListener("submit", guardarReporte);
       $("rep-probar").addEventListener("click", probarReporte);
+      $("btn-panico").addEventListener("click", botonPanico);
       $("btn-sekaia").addEventListener("click", abrirSekaIA);
 
       $("btn-salir").addEventListener("click", async () => {

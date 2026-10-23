@@ -152,7 +152,7 @@
     import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
              doc, getDoc, setDoc, onSnapshot, collection, serverTimestamp }
       from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBFFwQwNI9cCCF56bLq-bsZfKlYGWZI1IU",
@@ -264,6 +264,30 @@
 
       window.__wpPuente.perfil = perfil;
       window.__wpPuente.resolver({ leerCache, encolar });
+      vigilarSeguridad(user, perfil);
+    }
+
+    // Candado del sistema para sistema.html: pausa por licencia y cierre de sesión (pánico / "sacar de equipos")
+    const aMillis = (v) => !v ? 0 : (v.toMillis ? v.toMillis() : (v.seconds ? v.seconds * 1000 : (typeof v === "string" ? Date.parse(v) || 0 : (v instanceof Date ? v.getTime() : 0))));
+    function vigilarSeguridad(user, perfil) {
+      let baseSesion = 0, basePanico = 0, primeroSesion = true, primeroPanico = true;
+      const salir = (texto) => { pantallaAcceso(texto); signOut(auth).catch(() => {}); };
+      onSnapshot(doc(db, "usuarios", user.uid), (snap) => {
+        const d = snap.exists() ? snap.data() : null;
+        const sd = aMillis(d && d.sesionDesde);
+        if (primeroSesion) { baseSesion = sd; primeroSesion = false; return; }
+        if (sd > baseSesion) salir("El administrador cerró tu sesión. Vuelve a entrar en WorkPulse.");
+      }, () => {});
+      onSnapshot(doc(db, "config", "sistema"), (snap) => {
+        const d = snap.exists() ? snap.data() : null;
+        const pd = aMillis(d && d.panicoDesde);
+        if (primeroPanico) { basePanico = pd; primeroPanico = false; return; }
+        if (pd > basePanico && d.excepto !== user.uid) salir("El administrador cerró la sesión de todos los equipos. Vuelve a entrar en WorkPulse.");
+      }, () => {});
+      onSnapshot(doc(db, "config", "licencia"), (snap) => {
+        const d = snap.exists() ? snap.data() : null;
+        if (d && d.activa === false) pantallaAcceso((d.mensaje ? d.mensaje + " " : "") + "WorkPulse está en pausa (licencia vencida). Tus datos están a salvo.");
+      }, () => {});
     }
 
     let arrancado = false;
