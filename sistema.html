@@ -328,6 +328,33 @@
   (function () {
     "use strict";
     var abrirNativo = window.open.bind(window);
+
+    // En el celular, las pantallas de los módulos (tarjetas MTTO, historial, refacciones...) fueron diseñadas
+    // para PC: columnas lado a lado con letra de 25-34 px, que en un teléfono parten las palabras letra por letra.
+    // Este estilo solo aplica en pantallas de menos de 820 px: apila las columnas, baja la letra a un tamaño
+    // todavía grande, no parte palabras y deja deslizar de lado las tablas anchas. En PC no cambia nada.
+    var CSS_MOVIL = "@media (max-width: 820px) {" +
+      "html,body{max-width:100%!important;overflow-x:hidden}" +
+      "body{padding:8px!important;margin:0!important}" +
+      ".plan-card-container,.ref-card{padding:14px!important}" +
+      ".plan-header{flex-direction:column!important;gap:10px;text-align:center}" +
+      ".plan-header img{height:42px!important}" +
+      ".plan-title{font-size:22px!important;letter-spacing:0!important;line-height:1.25!important}" +
+      "[style*='grid-template-columns'],.plan-row-mirror,.plan-triptych-grid,.grid-dashboard-ref{grid-template-columns:1fr!important}" +
+      "[style*='border-right: 2px solid']{border-right:none!important;padding-right:0!important;border-bottom:2px solid #cbd5e1!important;padding-bottom:12px!important}" +
+      "[style*='font-size: 34px'],[style*='font-size: 30px'],[style*='font-size: 28px'],[style*='font-size: 27px'],[style*='font-size: 26px'],[style*='font-size: 25px']{font-size:19px!important;line-height:1.55!important}" +
+      "*{word-break:normal!important}" +
+      "body *{overflow-wrap:anywhere}" +
+      "table{display:block;max-width:100%;overflow-x:auto}" +
+      "img{max-width:100%;height:auto}" +
+      "}";
+    function ponerEstiloMovil(d) {
+      if (!d || !d.documentElement || d.getElementById("wp-movil")) return;
+      var st = d.createElement("style");
+      st.id = "wp-movil";
+      st.textContent = CSS_MOVIL;
+      (d.head || d.documentElement).appendChild(st);
+    }
     var pila = [], ignorarPop = 0;
     // ¿Llegamos aquí desde el tablero con un módulo ya elegido? Al cerrar ese módulo se regresa directo.
     var desdeTablero = false;
@@ -386,7 +413,8 @@
       regresar.addEventListener("click", function () { cerrarCapa(capa); });
       capa.__timer = setInterval(function () {
         try { if (w.document && w.document.title) titulo.textContent = w.document.title; } catch (e) {}
-      }, 700);
+        try { ponerEstiloMovil(w.document); } catch (e) {}       // se vuelve a poner si el módulo reescribe la página
+      }, 400);
 
       if (primerModuloPendiente && !pila.length) { capa.__alTablero = true; primerModuloPendiente = false; }
       pila.push(capa);

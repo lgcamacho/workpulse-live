@@ -399,27 +399,42 @@
     table.board td.nd { color: #a1a1aa; }
     table.board td.bloq { background: repeating-linear-gradient(45deg, #f1f5f9 0 6px, #e2e8f0 6px 12px); }
     table.board tr.tot td { background: #e4e4e7; border-top: 3.5px solid #000; }
-    .cc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-    .cc-card { background: #fff; border: 2px solid var(--verde); border-radius: 8px; padding: 10px; height: 300px;
-               display: flex; flex-direction: column; min-width: 0; }
-    .cc-tit { text-align: center; font-size: 11px; font-weight: 900; color: var(--verde); text-transform: uppercase;
-              border-bottom: 1px solid var(--borde); padding-bottom: 6px; margin-bottom: 4px; }
-    .cc-chart { flex: 1; min-height: 0; }
+    /* ----- Centro de Comando (8 gráficas) ----- */
+    /* Rejilla de 12 columnas: la gráfica por hora a todo lo ancho, las de día/semana/mes en 3, los indicadores en 4 */
+    .cc-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+    .cc-card { background: #fff; border: 2px solid var(--verde); border-radius: 10px; padding: 12px; height: 330px;
+               display: flex; flex-direction: column; min-width: 0; grid-column: span 3; }
+    .cc-card.cc-ancho { grid-column: span 12; height: 400px; }
+    .cc-card.cc-linea { grid-column: span 4; height: 430px; }
+    .cc-tit { text-align: center; font-size: 15px; font-weight: 900; color: var(--verde); text-transform: uppercase; letter-spacing: .3px;
+              border-bottom: 1px solid var(--borde); padding-bottom: 7px; margin-bottom: 4px; }
+    /* Resultados contra la meta (debajo de las gráficas 2, 3 y 4) */
+    .cc-res { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-content: center; padding-top: 8px; margin-top: 4px;
+              border-top: 1px solid var(--borde); flex: 0 0 auto; min-height: 74px; }
+    .cc-res span { font-size: 13.5px; font-weight: 900; padding: 5px 11px; border-radius: 999px; background: #f1f5f9; color: var(--texto); white-space: nowrap; }
+    .cc-res span.ok { background: #dcfce7; color: #14532d; }
+    .cc-res span.med { background: #fef3c7; color: #78350f; }
+    .cc-res span.mal { background: #fee2e2; color: #7f1d1d; }
+    .cc-chart { flex: 1; min-height: 0; overflow: hidden; }
     .cc-avance { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; }
     .cc-avance .num { font-size: 38px; font-weight: 900; color: var(--texto); }
     .cc-avance .num span { font-size: 18px; color: var(--gris); }
     .cc-barra { width: 100%; height: 22px; background: var(--borde); border-radius: 11px; overflow: hidden; position: relative; }
     .cc-barra > div { height: 100%; }
-    .cc-barra > b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+    .cc-barra > b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
     .cc-fallas { flex: 1; overflow-y: auto; }
     .cc-falla { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
-    .cc-falla .l { font-size: 13px; font-weight: 900; }
-    .cc-falla .l small { color: var(--rojo); font-size: 11px; margin-left: 4px; }
-    .cc-falla .d { font-size: 10px; font-weight: 900; color: var(--gris); text-transform: uppercase; }
-    .cc-falla .p { color: var(--rojo); font-weight: 900; font-size: 14px; white-space: nowrap; }
+    .cc-falla .l { font-size: 15px; font-weight: 900; }
+    .cc-falla .l small { color: var(--rojo); font-size: 13px; margin-left: 4px; }
+    .cc-falla .d { font-size: 12px; font-weight: 900; color: var(--gris); text-transform: uppercase; }
+    .cc-falla .p { color: var(--rojo); font-weight: 900; font-size: 16px; white-space: nowrap; }
     .cc-ok { color: var(--verde); font-weight: 900; text-align: center; padding: 14px 0; }
-    @media (max-width: 1100px) { .cc-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 640px)  { .cc-grid { grid-template-columns: 1fr; } .cc-card { height: 280px; } }
+    @media (max-width: 1200px) { .cc-card, .cc-card.cc-linea { grid-column: span 6; } }
+    @media (max-width: 640px)  { .cc-grid { gap: 12px; } .cc-card, .cc-card.cc-linea, .cc-card.cc-ancho { grid-column: span 12; height: 380px; }
+                                 .cc-card.cc-linea { height: 470px; } .cc-card:has(#cc-dt) { height: 450px; } .cc-res { min-height: 112px; } .cc-tit { font-size: 14px; }
+                                 /* Por hora en el celular: se desliza de lado para que las 24 horas se lean */
+                                 .cc-desliza { overflow-x: auto !important; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+                                 #cc-dia { min-width: 860px; } }
     .vacio { text-align: center; padding: 18px; font-weight: 800; color: var(--gris); }
     .aviso-error { background: #fef2f2; border: 2px solid var(--rojo); color: #991b1b; border-radius: 10px;
                    padding: 14px; font-weight: 800; margin-top: 16px; }
@@ -647,10 +662,10 @@
 
     <h2 id="sec-centro">Centro de comando</h2>
     <section class="cc-grid">
-      <div class="cc-card"><div class="cc-tit" id="cc-tit-dia">1. Producción por hora</div><div class="cc-chart" id="cc-dia"></div></div>
-      <div class="cc-card"><div class="cc-tit">2. Producción por día</div><div class="cc-chart" id="cc-sem"></div></div>
-      <div class="cc-card"><div class="cc-tit">3. Producción por semana</div><div class="cc-chart" id="cc-mes"></div></div>
-      <div class="cc-card"><div class="cc-tit">4. Comportamiento mensual</div><div class="cc-chart" id="cc-ano"></div></div>
+      <div class="cc-card cc-ancho"><div class="cc-tit" id="cc-tit-dia">1. Producción por hora</div><div class="cc-chart cc-desliza"><div id="cc-dia" style="height:100%"></div></div></div>
+      <div class="cc-card cc-linea"><div class="cc-tit">2. Producción por día</div><div class="cc-chart" id="cc-sem"></div><div class="cc-res" id="cc-res-sem"></div></div>
+      <div class="cc-card cc-linea"><div class="cc-tit">3. Producción por semana</div><div class="cc-chart" id="cc-mes"></div><div class="cc-res" id="cc-res-mes"></div></div>
+      <div class="cc-card cc-linea"><div class="cc-tit">4. Comportamiento mensual</div><div class="cc-chart" id="cc-ano"></div><div class="cc-res" id="cc-res-ano"></div></div>
       <div class="cc-card"><div class="cc-tit">5. Performance global (turno)</div><div class="cc-chart" id="cc-perf"></div></div>
       <div class="cc-card"><div class="cc-tit">6. Avance vs meta (turno)</div>
         <div class="cc-avance">
@@ -1879,20 +1894,36 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       "01:00-02:00","02:00-03:00","03:00-04:00","04:00-05:00","05:00-06:00","06:00-07:00"];
     const graficas = {};
 
-    function opcionesLinea(categorias, rotar) {
+    // Números cortos para los ejes y las etiquetas: 53,200 -> 53.2k
+    const fmtK = (v) => { v = Number(v) || 0; const a = Math.abs(v);
+      return a >= 1000 ? (v / 1000).toFixed(a >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(Math.round(v)); };
+    // Gráficas pensadas para leerse de lejos y con poca vista: letra grande, línea real gruesa verde,
+    // meta punteada naranja (no dos verdes parecidos), valores sobre los puntos y % de la meta al tocar.
+    function opcionesLinea(categorias, rotar, conValores) {
       return {
-        chart: { type: "line", height: "100%", width: "100%", toolbar: { show: false }, parentHeightOffset: 0, animations: { enabled: false } },
-        stroke: { width: [3.5, 2], curve: "smooth" },
-        colors: ["#009B4A", "#00E676"],
-        series: [{ name: "Producción Real", data: [] }, { name: "Meta", data: [] }],
+        chart: { type: "line", height: "100%", width: "100%", toolbar: { show: false }, parentHeightOffset: 0,
+                 animations: { enabled: false }, fontFamily: "'Segoe UI', Arial, sans-serif" },
+        stroke: { width: [5, 3], curve: "smooth", dashArray: [0, 7] },
+        colors: ["#009B4A", "#ea580c"],
+        markers: { size: rotar ? [3, 0] : [6, 0], strokeWidth: 2, strokeColors: "#ffffff", hover: { size: 8 } },
+        series: [{ name: "Real", data: [] }, { name: "Meta", data: [] }],
+        dataLabels: { enabled: !!conValores, enabledOnSeries: [0], formatter: (v) => (v > 0 ? fmtK(v) : ""), offsetY: -8,
+                      style: { fontSize: "12.5px", fontWeight: 900, colors: ["#064e3b"] }, background: { enabled: false } },
         xaxis: { categories: categorias, labels: { rotate: rotar ? -45 : 0, rotateAlways: !!rotar, hideOverlappingLabels: !rotar,
-                 style: { fontWeight: "900", fontSize: rotar ? "8px" : "10px", colors: "#0f172a" } } },
-        yaxis: { min: 0, labels: { style: { fontWeight: "bold", fontSize: "10px" } } },
-        grid: { borderColor: "#cbd5e1", strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: true } },
-                padding: { top: 6, bottom: rotar ? 18 : 8, left: 8, right: 8 } },
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        tooltip: { shared: true }
+                 style: { fontWeight: "900", fontSize: rotar ? "11.5px" : "13.5px", colors: "#0f172a" } } },
+        yaxis: { min: 0, forceNiceScale: true, labels: { formatter: fmtK, style: { fontWeight: 800, fontSize: "13px", colors: "#334155" } } },
+        grid: { borderColor: "#e2e8f0", strokeDashArray: 4, xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } },
+                padding: { top: 10, bottom: rotar ? 18 : 6, left: 10, right: 14 } },
+        legend: { show: true, position: "top", horizontalAlign: "right", fontSize: "13.5px", fontWeight: 800,
+                  markers: { size: 7 }, itemMargin: { horizontal: 10, vertical: 0 } },
+        responsive: [{ breakpoint: 641, options: { xaxis: { labels: { rotate: rotar ? -45 : -40, rotateAlways: true, hideOverlappingLabels: false,
+                         style: { fontSize: "12px" } } }, dataLabels: { style: { fontSize: "11px" } } } }],
+        tooltip: { shared: true, intersect: false, style: { fontSize: "15px" },
+                   y: { formatter: (v, o) => {
+                     const n = Number(v || 0).toLocaleString("es-MX") + " pzs";
+                     if (!o || o.seriesIndex !== 0) return n;
+                     const m = (o.w.globals.series[1] || [])[o.dataPointIndex] || 0;
+                     return m > 0 ? n + "  (" + Math.round(v / m * 100) + "% de la meta)" : n; } } }
       };
     }
 
@@ -1900,15 +1931,15 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (graficas.listas) return true;
       if (typeof window.ApexCharts !== "function") return false;
       const crear = (id, opts) => { const g = new ApexCharts($(id), opts); g.render(); return g; };
-      graficas.dia = crear("cc-dia", opcionesLinea(HORAS_24, true));
-      graficas.sem = crear("cc-sem", opcionesLinea(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]));
-      graficas.mes = crear("cc-mes", opcionesLinea(["S31", "S32", "S33", "S34", "S35", "S36", "S37", "S38", "S39"]));
-      graficas.ano = crear("cc-ano", opcionesLinea(["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]));
+      graficas.dia = crear("cc-dia", opcionesLinea(HORAS_24, true, false));
+      graficas.sem = crear("cc-sem", opcionesLinea(["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"], false, true));
+      graficas.mes = crear("cc-mes", opcionesLinea(["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9"], false, true));
+      graficas.ano = crear("cc-ano", opcionesLinea(MESES_CORTOS, false, true));
       graficas.perf = crear("cc-perf", {
         chart: { type: "radialBar", height: "100%", animations: { enabled: false } },
         series: [0], colors: ["#f59e0b"],
         plotOptions: { radialBar: { hollow: { size: "60%" }, dataLabels: { name: { show: false },
-          value: { fontSize: "28px", fontWeight: "bold", color: "#0f172a", formatter: (v) => Number(v).toFixed(1) + "%" } } } }
+          value: { fontSize: "34px", fontWeight: "bold", color: "#0f172a", formatter: (v) => Number(v).toFixed(1) + "%" } } } }
       });
       graficas.dt = crear("cc-dt", {
         chart: { type: "donut", height: "100%", animations: { enabled: false } },
@@ -1916,12 +1947,12 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         labels: ["Hombre", "Máquina", "Material", "Método", "Calidad", "Producción", "Otros"],
         colors: ["#2563eb", "#d97706", "#eab308", "#16a34a", "#9333ea", "#dc2626", "#64748b"],
         plotOptions: { pie: { donut: { size: "68%", labels: { show: true,
-          name: { fontSize: "11px", fontWeight: 900, color: "#64748b", offsetY: -5 },
+          name: { fontSize: "13px", fontWeight: 900, color: "#64748b", offsetY: -5 },
           value: { fontSize: "22px", fontWeight: 900, color: "#dc2626", offsetY: 5, formatter: (v) => v + " min" },
-          total: { show: true, showAlways: true, label: "TOTAL PARO", fontSize: "11px", fontWeight: 900, color: "#64748b",
+          total: { show: true, showAlways: true, label: "TOTAL PARO", fontSize: "13px", fontWeight: 900, color: "#64748b",
                    formatter: (w) => w.globals.seriesTotals.reduce((a, b) => a + b, 0) + " min" } } } } },
         dataLabels: { enabled: true, formatter: (v, o) => { const m = o.w.globals.series[o.seriesIndex]; return m > 0 ? m + "m" : ""; } },
-        legend: { position: "right", fontSize: "10px", fontWeight: "bold", itemMargin: { vertical: 0 }, markers: { size: 5 } },
+        legend: { position: "right", fontSize: "13px", fontWeight: "bold", itemMargin: { vertical: 1 }, markers: { size: 6 } },
         responsive: [{ breakpoint: 640, options: { legend: { position: "bottom" } } }]
       });
       graficas.listas = true;
@@ -1929,6 +1960,46 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     }
 
     const serie = (arr, n) => Array.from({ length: n }, (_, i) => num(Array.isArray(arr) ? arr[i] : 0));
+    const MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const MESES_LARGOS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // Franja de resultados: % de cumplimiento contra la meta, con el color del semáforo del pizarrón
+    function chipMeta(titulo, real, meta) {
+      const p = meta > 0 ? Math.round(real / meta * 100) : null;
+      const s = el("span", p === null ? null : (p >= 95 ? "ok" : p >= 90 ? "med" : "mal"),
+                   titulo + ": " + (p === null ? "sin meta" : p + "%  (" + fmtK(real) + " / " + fmtK(meta) + ")"));
+      s.title = titulo + ": " + Math.round(real).toLocaleString("es-MX") + " de " + Math.round(meta).toLocaleString("es-MX") + " piezas";
+      return s;
+    }
+    // Cada gráfica de línea toma exactamente la altura de su caja (después de pintar los resultados y al girar la pantalla)
+    function ajustarAlturaGraficas() {
+      [["dia", "cc-dia"], ["sem", "cc-sem"], ["mes", "cc-mes"], ["ano", "cc-ano"]].forEach(([k, id]) => {
+        const caja = $(id), g = graficas[k];
+        if (!caja || !g) return;
+        const alto = (id === "cc-dia" ? caja.parentNode : caja).clientHeight;
+        if (alto > 80 && g.__alto !== alto) { g.__alto = alto; g.updateOptions({ chart: { height: alto } }, false, false); }
+      });
+    }
+    let timerAlto = null;
+    window.addEventListener("resize", () => { clearTimeout(timerAlto); timerAlto = setTimeout(() => { if (graficas.listas) ajustarAlturaGraficas(); }, 250); });
+
+    function pintarResultadosMeta(d) {
+      const suma = (a) => (Array.isArray(a) ? a : []).reduce((x, y) => x + num(y), 0);
+      const hoyIdx = (new Date().getDay() + 6) % 7;                 // 0 = lunes
+      const sem = d.semana || {}, mes = d.mes || {}, ano = d.ano || {};
+      $("cc-res-sem").replaceChildren(
+        chipMeta("Hoy", num(sem.real?.[hoyIdx]), num(sem.meta?.[hoyIdx])),
+        chipMeta("Esta semana", suma(sem.real), suma(sem.meta)));
+      const et = Array.isArray(mes.etiquetas) && mes.etiquetas.length === 9 ? mes.etiquetas : null;
+      $("cc-res-mes").replaceChildren(
+        chipMeta("Esta semana" + (et ? " (" + et[8] + ")" : ""), num(mes.real?.[8]), num(mes.meta?.[8])),
+        chipMeta("Semana pasada", num(mes.real?.[7]), num(mes.meta?.[7])),
+        chipMeta("9 semanas", suma(mes.real), suma(mes.meta)));
+      const m = new Date().getMonth();
+      $("cc-res-ano").replaceChildren(
+        chipMeta(MESES_LARGOS[m], num(ano.real?.[m]), num(ano.meta?.[m])),
+        chipMeta("En el año", suma(ano.real), suma(ano.meta)));
+    }
 
     function pintarCentroComando(d) {
       if (!d || d.error) {
@@ -1950,13 +2021,18 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         return p >= 95 ? "#009B4A" : p >= 90 ? "#d97706" : "#dc2626";
       });
       graficas.dia.updateOptions({ xaxis: { categories: HORAS_24, labels: { style: { colors: coloresHora } } } }, false, false);
-      graficas.dia.updateSeries([{ name: "Producción Real", data: real24 }, { name: "Meta", data: meta24 }], false);
+      graficas.dia.updateSeries([{ name: "Real", data: real24 }, { name: "Meta", data: meta24 }], false);
 
       // 2, 3 y 4
+      if (Array.isArray(d.mes?.etiquetas) && d.mes.etiquetas.length === 9) {
+        graficas.mes.updateOptions({ xaxis: { categories: d.mes.etiquetas } }, false, false);
+      }
       [["sem", d.semana, 7], ["mes", d.mes, 9], ["ano", d.ano, 12]].forEach(([k, bloque, n]) => {
-        graficas[k].updateSeries([{ name: "Producción Real", data: serie(bloque?.real, n) },
+        graficas[k].updateSeries([{ name: "Real", data: serie(bloque?.real, n) },
                                   { name: "Meta", data: serie(bloque?.meta, n) }], false);
       });
+      pintarResultadosMeta(d);
+      ajustarAlturaGraficas();
 
       // 5. Performance (mismos colores que la app: ≥95 verde, ≥80 ámbar, si no rojo)
       const t = d.turno || {};
@@ -3387,6 +3463,12 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       prepararSekaIA();
       window.WPSekaIA.abrir();
     }
+    // Mientras el panel de SekaIA esté abierto, avisar cada minuto que hay alguien: así Apps Script
+    // se queda atendiendo la cola cada 2 s y las respuestas llegan en segundos (no al siguiente minuto).
+    setInterval(() => {
+      const panel = document.querySelector(".sk-panel");
+      if (panel && !panel.hidden && document.visibilityState === "visible") avisarPresencia();
+    }, 60000);
 
     // ---------- Arranque ----------
     function arrancar() {
