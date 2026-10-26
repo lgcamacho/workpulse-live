@@ -343,9 +343,21 @@
       "[style*='grid-template-columns'],.plan-row-mirror,.plan-triptych-grid,.grid-dashboard-ref{grid-template-columns:1fr!important}" +
       "[style*='border-right: 2px solid']{border-right:none!important;padding-right:0!important;border-bottom:2px solid #cbd5e1!important;padding-bottom:12px!important}" +
       "[style*='font-size: 34px'],[style*='font-size: 30px'],[style*='font-size: 28px'],[style*='font-size: 27px'],[style*='font-size: 26px'],[style*='font-size: 25px']{font-size:19px!important;line-height:1.55!important}" +
+      // Las palabras NO se parten letra por letra: "anywhere" encogía las columnas de tabla y los títulos a 1 letra de ancho
       "*{word-break:normal!important}" +
-      "body *{overflow-wrap:anywhere}" +
-      "table{display:block;max-width:100%;overflow-x:auto}" +
+      "body *{overflow-wrap:break-word!important}" +
+      // Encabezado de cada pantalla (logo | título | WORKPULSE | fecha): en el celular va apilado y centrado
+      ".top-header{flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:10px!important;padding:12px!important}" +
+      ".header-left,.header-right,.header-title-center{flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;" +
+        "width:100%!important;max-width:100%!important;gap:8px!important;flex:0 0 auto!important;margin:0!important}" +
+      ".header-left img,.top-header img{height:40px!important;max-height:40px!important;width:auto!important}" +
+      ".top-header h1,.header-left h1{font-size:21px!important;line-height:1.25!important;letter-spacing:0!important}" +
+      ".top-header h2,.header-title-center h2{font-size:20px!important;line-height:1.25!important;letter-spacing:.5px!important;margin:0!important}" +
+      ".top-header [style*='display:flex'],.top-header [style*='display: flex']{flex-wrap:wrap!important;justify-content:center!important;row-gap:4px!important}" +
+      // Tablas anchas: se deslizan de lado con el dedo, sin aplastar las columnas
+      "table{display:block!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch}" +
+      "th{white-space:normal!important;min-width:64px}" +
+      "td{min-width:44px}" +
       "img{max-width:100%;height:auto}" +
       "}";
     function ponerEstiloMovil(d) {
