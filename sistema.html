@@ -533,6 +533,56 @@
     });
   </script>
 
+  <!-- Módulos por puesto (lista en permisos.js, la misma del tablero):
+       se ocultan los botones que ese puesto no ve y la función queda bloqueada
+       (también si alguien entra con un enlace ?abrir=...). Lo que cada quien GUARDA lo revisa Apps Script. -->
+  <script src="permisos.js"></script>
+  <style>.wp-sin-permiso { display: none !important; }</style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var P = window.WP_PERMISOS;
+      if (!P) return;
+      var rolActual = function () { return (window.__wpPuente && window.__wpPuente.perfil && window.__wpPuente.perfil.rol) || null; };
+      var esperarRol = function (cb) {
+        var r = rolActual(); if (r) { cb(r); return; }
+        var t = setInterval(function () { r = rolActual(); if (r) { clearInterval(t); cb(r); } }, 250);
+      };
+      var sinPermiso = function () { alert("Tu puesto no tiene permiso para abrir este módulo. Si lo necesitas, pídeselo al administrador."); };
+
+      // 1) Bloquear las funciones de los módulos que ese puesto no ve
+      Object.keys(P.FUNCIONES).forEach(function (clave) {
+        var nombre = P.FUNCIONES[clave], original = nombre && window[nombre];
+        if (typeof original !== "function") return;
+        window[nombre] = function () {
+          var yo = this, args = arguments;
+          esperarRol(function (rol) { if (P.puedeVer(rol, clave)) original.apply(yo, args); else sinPermiso(); });
+        };
+      });
+      var abrirModalOriginal = window.abrirModal;                // el botón ADMIN usa abrirModal('admin-modal')
+      if (typeof abrirModalOriginal === "function") {
+        window.abrirModal = function (id) {
+          var yo = this, args = arguments;
+          if (id !== "admin-modal") return abrirModalOriginal.apply(yo, args);
+          esperarRol(function (rol) { if (P.puedeVer(rol, "ADMIN")) abrirModalOriginal.apply(yo, args); else sinPermiso(); });
+        };
+      }
+
+      // 2) Ocultar sus botones en cuanto se sabe el puesto
+      esperarRol(function (rol) {
+        var claveDe = function (onclick) {
+          if (/abrirModal\(\s*['"]admin-modal['"]\s*\)/.test(onclick)) return "ADMIN";
+          if (/\?ver=tv/.test(onclick)) return "TV";
+          var k = Object.keys(P.FUNCIONES).filter(function (c) { return P.FUNCIONES[c] && onclick.indexOf(P.FUNCIONES[c] + "(") !== -1; });
+          return k[0] || null;
+        };
+        document.querySelectorAll(".header button[onclick], .header-title-box button[onclick], .btn-group button[onclick]").forEach(function (b) {
+          var clave = claveDe(b.getAttribute("onclick") || "");
+          if (clave && !P.puedeVer(rol, clave)) b.classList.add("wp-sin-permiso");
+        });
+      });
+    });
+  </script>
+
   
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

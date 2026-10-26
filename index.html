@@ -337,6 +337,8 @@
                   font: 900 12px 'Segoe UI', Arial, sans-serif; cursor: pointer; }
     .btn-lineas:hover { background: #ffedd5; }
     .btn-lineas[hidden] { display: none; }
+    .campo[hidden] { display: none !important; }
+    [data-abrir][hidden], #btn-plan[hidden], #btn-sekaia[hidden], #btn-modo-tv[hidden] { display: none !important; }   /* botones que ese puesto no ve */
     #tv .btn-lineas { display: none; }
     .modal-card.ancho { max-width: 760px; }
     .ln-copiar { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
@@ -545,10 +547,12 @@
         </label>
         <label class="campo">Puesto
           <select id="al-puesto">
-            <option value="SUPERVISOR">Supervisor (captura su línea)</option>
-            <option value="GERENCIA">Gerencia</option>
-            <option value="SUPERINTENDENTE">Superintendente</option>
+            <option value="PRACTICANTE">Practicante</option>
+            <option value="TECNICO">Técnico</option>
             <option value="INGENIERO">Ingeniero</option>
+            <option value="SUPERINTENDENTE">Superintendente</option>
+            <option value="GERENCIA">Gerente</option>
+            <option value="SUPERVISOR">Supervisor (captura su línea)</option>
           </select>
           <small id="al-puesto-nota">El administrador aprueba tu cuenta; después podrás capturar en tu línea.</small>
         </label>
@@ -591,7 +595,7 @@
               <label class="campo">Usuario <input id="cr-usuario" autocapitalize="none" spellcheck="false" maxlength="30"></label>
               <label class="campo">Contraseña <input id="cr-pass" type="text" autocomplete="off"><small>Mínimo 6 caracteres. Compártela con la persona.</small></label>
               <label class="campo">Rol
-                <select id="cr-rol"><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="GERENCIA">GERENCIA (solo ver)</option><option value="SUPERINTENDENTE">SUPERINTENDENTE (solo ver)</option><option value="INGENIERO">INGENIERO (solo ver)</option><option value="ADMIN">ADMIN (todo)</option></select>
+                <select id="cr-rol"><option value="PRACTICANTE">PRACTICANTE (tablero, Plan Overview, SekaIA, resumen y su pase)</option><option value="TECNICO">TÉCNICO (opera MTTO y EHS)</option><option value="INGENIERO">INGENIERO (opera MTTO y EHS + resumen de producción)</option><option value="SUPERINTENDENTE">SUPERINTENDENTE (solo ver)</option><option value="GERENCIA">GERENTE (solo ver)</option><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="ADMIN">ADMIN (todo)</option></select>
               </label>
               <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. Solo el SUPERVISOR las necesita.</small></label>
               <button type="submit" class="btn-prim" id="btn-crear">Crear usuario</button>
@@ -843,6 +847,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+  <script src="permisos.js"></script>
   <script src="sekaia.js" defer></script>
   <!-- Pantallas de módulos: el mismo generador del sistema original, alimentado desde Firebase -->
   <script>
@@ -2141,11 +2146,24 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     const ROLES = {
       ADMIN: "ADMIN (todo: captura, configura y administra usuarios)",
       SUPERVISOR: "SUPERVISOR (ve todo, captura solo sus líneas)",
-      GERENCIA: "GERENCIA (solo ver)",
+      GERENCIA: "GERENCIA = Gerente (solo ver)",
       SUPERINTENDENTE: "SUPERINTENDENTE (solo ver)",
-      INGENIERO: "INGENIERO (solo ver)",
+      INGENIERO: "INGENIERO (opera MTTO y EHS + resumen de producción; no captura producción)",
+      TECNICO: "TECNICO (opera MTTO y EHS; no captura producción)",
+      PRACTICANTE: "PRACTICANTE (tablero, Plan Overview, SekaIA, resumen de producción y pedir su pase)",
       CONSULTA: "CONSULTA (solo ver)"
     };
+    // "Técnico" con acento o "Gerente" también se aceptan al escribir un rol
+    const rolDeTexto = (t) => {
+      const x = String(t || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return x === "GERENTE" ? "GERENCIA" : x;
+    };
+    // Qué botones ve cada puesto (lista en permisos.js, la misma del sistema completo)
+    const puedeVerModulo = (clave) => !window.WP_PERMISOS || !perfilActual || window.WP_PERMISOS.puedeVer(perfilActual.rol, clave);
+    function aplicarPermisosBotones() {
+      document.querySelectorAll("[data-abrir]").forEach((b) => { b.hidden = !puedeVerModulo(b.dataset.abrir); });
+      [["btn-plan", "PLAN"], ["btn-sekaia", "SEKAIA"], ["btn-modo-tv", "TV"]].forEach(([id, k]) => { const b = $(id); if (b) b.hidden = !puedeVerModulo(k); });
+    }
     const soloVer = (rol) => rol !== "ADMIN" && rol !== "SUPERVISOR";
     function puedeEditarLinea(linea) {
       if (!perfilActual || perfilActual.activo !== true) return false;
@@ -2265,6 +2283,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       caja.replaceChildren(document.createTextNode((p.nombre || p.usuario) + " (" + p.usuario + ") "), rol);
       $("btn-admin").hidden = p.rol !== "ADMIN";
       document.body.classList.toggle("es-admin", p.rol === "ADMIN");
+      aplicarPermisosBotones();
       if (p.rol !== "ADMIN") cerrarAdmin();
     }
 
@@ -3022,7 +3041,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const rol = ROLES[u.solicita] && u.solicita !== "ADMIN" ? u.solicita : "CONSULTA";
       if (rol === "SUPERVISOR" && !(u.lineas || []).length) { alert("Pidió ser supervisor pero no tiene línea. Asígnale una con \"Otro puesto\" o \"Líneas\"."); return; }
       const que = rol === "SUPERVISOR" ? "Podrá ver todo y CAPTURAR en la Línea " + (u.lineas || []).join(", ") + "."
-                                       : "Podrá ver todo, sin modificar nada.";
+                : (ROLES[rol] || "Podrá ver el tablero.");
       if (!confirm("¿Aprobar a " + (u.nombre || u.usuario) + " como " + rol + "?\n" + que)) return;
       actualizarPerfil(u, { rol }, u.usuario + " aprobado como " + rol);
     }
@@ -3030,7 +3049,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const txt = prompt("Rol de " + u.usuario + " (ahora: " + u.rol + "). Escribe uno:\n" +
                          Object.entries(ROLES).filter(([k]) => k !== "CONSULTA").map(([, v]) => "• " + v).join("\n"), u.rol);
       if (txt === null) return;
-      const nuevo = String(txt).trim().toUpperCase();
+      const nuevo = rolDeTexto(txt);
       if (!ROLES[nuevo]) { alert("Rol no válido. Usa: " + Object.keys(ROLES).filter((k) => k !== "CONSULTA").join(", ") + "."); return; }
       if (nuevo === u.rol) return;
       if (nuevo === "SUPERVISOR" && !(u.lineas || []).length) { alert("Primero asígnale al menos una línea con el botón \"Líneas\"."); return; }
@@ -3491,12 +3510,21 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
       $("form-entrar").addEventListener("submit", entrar);
       $("form-alta").addEventListener("submit", darDeAlta);
-      $("al-puesto").addEventListener("change", () => {
-        const sup = $("al-puesto").value === "SUPERVISOR";
-        $("al-linea-campo").hidden = !sup;
-        $("al-puesto-nota").textContent = sup ? "El administrador aprueba tu cuenta; después podrás capturar en tu línea."
-          : "El administrador aprueba tu cuenta; después podrás ver todo, sin modificar nada.";
-      });
+      const NOTA_PUESTO = {
+        PRACTICANTE: "podrás ver el tablero, Plan Overview, SekaIA, el resumen de producción y pedir tu pase.",
+        TECNICO: "podrás abrir y operar mantenimiento y EHS (no capturas producción).",
+        INGENIERO: "podrás abrir y operar mantenimiento y EHS, y ver el resumen de producción (no capturas producción).",
+        SUPERINTENDENTE: "podrás ver todo, sin modificar nada.",
+        GERENCIA: "podrás ver todo, sin modificar nada.",
+        SUPERVISOR: "podrás capturar en tu línea."
+      };
+      const alCambiarPuesto = () => {
+        const v = $("al-puesto").value;
+        $("al-linea-campo").hidden = v !== "SUPERVISOR";
+        $("al-puesto-nota").textContent = "El administrador aprueba tu cuenta; después " + (NOTA_PUESTO[v] || "podrás ver el tablero.");
+      };
+      $("al-puesto").addEventListener("change", alCambiarPuesto);
+      alCambiarPuesto();
       $("espera-salir").addEventListener("click", () => signOut(auth));
       $("ir-alta").addEventListener("click", verAlta);
       $("ir-entrar").addEventListener("click", verEntrar);
