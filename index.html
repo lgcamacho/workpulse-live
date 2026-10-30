@@ -363,6 +363,45 @@
     .aviso-lic { background: #fef3c7; border: 1.5px solid #f59e0b; color: #92400e; border-radius: 8px; padding: 8px 12px;
                  font-weight: 800; font-size: 13px; margin-bottom: 12px; }
     .aviso-lic[hidden] { display: none; }
+    /* Aviso: tu horario está por terminar */
+    .aviso-horario { position: fixed; top: 0; left: 0; right: 0; z-index: 65; background: #b45309; color: #fff; text-align: center;
+                     font: 900 14px 'Segoe UI', Arial, sans-serif; padding: 9px 14px; box-shadow: 0 3px 12px rgba(0,0,0,.25); }
+    .aviso-horario[hidden] { display: none; }
+    /* ----- Estación Central de Producción (PC fija de escritorio) ----- */
+    #panel-central { border-color: #0f766e; }
+    #panel-central[hidden] { display: none; }
+    .cen-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .cen-head h2 { margin: 0; color: #0f766e; font-size: 22px; }
+    .cen-turnos { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cen-turnos span { background: #ccfbf1; color: #115e59; border-radius: 999px; padding: 4px 12px; font-weight: 900; font-size: 13px; }
+    .cen-cols { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+    .cen-lineas { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+    .cen-linea { border: 1.5px solid #e2e8f0; border-left: 8px solid #94a3b8; border-radius: 10px; padding: 10px 12px; background: #fff; }
+    .cen-linea h4 { margin: 0; font-size: 17px; font-weight: 900; color: #0f172a; display: flex; justify-content: space-between; gap: 6px; }
+    .cen-linea .cen-sup { font-size: 12px; font-weight: 800; color: #64748b; margin: 2px 0 8px; }
+    .cen-linea .cen-num { font-size: 26px; font-weight: 900; line-height: 1.1; }
+    .cen-linea .cen-det { font-size: 12.5px; font-weight: 800; color: #475569; margin-top: 2px; }
+    .cen-barra { height: 10px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-top: 8px; }
+    .cen-barra i { display: block; height: 100%; background: #009B4A; }
+    .cen-linea .cen-btn { margin-top: 10px; width: 100%; border: none; border-radius: 8px; padding: 9px; font: 900 13px 'Segoe UI', Arial, sans-serif;
+                          background: #0f766e; color: #fff; cursor: pointer; }
+    .cen-linea .cen-btn.al-dia { background: #e2e8f0; color: #334155; }
+    .cen-caja { border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; background: #fff; margin-bottom: 12px; }
+    .cen-caja h3 { margin: 0 0 8px; font-size: 15px; font-weight: 900; }
+    .cen-caja.alertas h3 { color: #b91c1c; }
+    .cen-caja.pend h3 { color: #b45309; }
+    .cen-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 4px; border-top: 1px solid #f1f5f9;
+                font-size: 13.5px; font-weight: 800; color: #1e293b; }
+    .cen-item:first-of-type { border-top: none; }
+    .cen-item button { border: 1.5px solid #0f766e; background: #f0fdfa; color: #0f766e; border-radius: 7px; padding: 5px 10px;
+                       font: 900 12px 'Segoe UI', Arial, sans-serif; cursor: pointer; white-space: nowrap; }
+    .cen-vacio { color: #64748b; font-weight: 700; font-size: 13px; }
+    @media (max-width: 900px) { .cen-cols { grid-template-columns: 1fr; } }
+    /* Captura en la central: quién firma */
+    .cap-central { background: #f0fdfa; border: 1.5px solid #5eead4; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+    .cap-central[hidden] { display: none; }
+    .cap-central .fila2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+    #cap-pin { letter-spacing: 8px; font-size: 20px; font-weight: 900; text-align: center; -webkit-text-security: disc; }
     /* Seguridad en Administración */
     .seg-caja { border: 2px solid #fca5a5 !important; }
     .seg-caja h3 { color: #b91c1c !important; }
@@ -454,12 +493,14 @@
   </style>
 </head>
 <body>
+  <div class="aviso-horario" id="aviso-horario" hidden></div>
   <div class="barra-sesion">
     <div class="estado" id="estado"><span id="estado-texto">Conectando…</span></div>
     <div class="usuario-box" id="usuario-box" hidden>
       <span id="usuario"></span>
       <button type="button" class="btn-mini" id="btn-instalar" hidden title="Instalar WorkPulse como app">Instalar app</button>
       <button type="button" class="btn-mini" id="btn-avisos" hidden title="Recibir avisos de horas sin capturar">Activar avisos</button>
+      <button type="button" class="btn-mini" id="btn-pin" hidden title="PIN de 4 dígitos para capturar en la PC central">Mi PIN</button>
       <button type="button" class="btn-admin" id="btn-admin" hidden>Administración</button>
       <button type="button" class="btn-salir" id="btn-salir">Cerrar sesión</button>
     </div>
@@ -559,6 +600,10 @@
         <label class="campo" id="al-linea-campo">Línea de la que eres encargado
           <select id="al-linea" required><option value="">Cargando líneas…</option></select>
         </label>
+        <label class="campo" id="al-turno-campo">Tu turno
+          <select id="al-turno"><option value="">Cargando turnos…</option></select>
+          <small>Podrás entrar desde 30 min antes de tu entrada hasta 30 min después de tu salida.</small>
+        </label>
         <label class="campo">Código de registro
           <input id="al-codigo" autocapitalize="characters" spellcheck="false" required>
           <small>Te lo da el administrador de la planta.</small>
@@ -595,9 +640,13 @@
               <label class="campo">Usuario <input id="cr-usuario" autocapitalize="none" spellcheck="false" maxlength="30"></label>
               <label class="campo">Contraseña <input id="cr-pass" type="text" autocomplete="off"><small>Mínimo 6 caracteres. Compártela con la persona.</small></label>
               <label class="campo">Rol
-                <select id="cr-rol"><option value="PRACTICANTE">PRACTICANTE (tablero, Plan Overview, SekaIA, resumen y su pase)</option><option value="TECNICO">TÉCNICO (opera MTTO y EHS)</option><option value="INGENIERO">INGENIERO (opera MTTO y EHS + resumen de producción)</option><option value="SUPERINTENDENTE">SUPERINTENDENTE (solo ver)</option><option value="GERENCIA">GERENTE (solo ver)</option><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="ADMIN">ADMIN (todo)</option></select>
+                <select id="cr-rol"><option value="PRACTICANTE">PRACTICANTE (tablero, Plan Overview, SekaIA, resumen y su pase)</option><option value="TECNICO">TÉCNICO (opera MTTO y EHS)</option><option value="INGENIERO">INGENIERO (opera MTTO y EHS + resumen de producción)</option><option value="SUPERINTENDENTE">SUPERINTENDENTE (solo ver)</option><option value="GERENCIA">GERENTE (solo ver)</option><option value="SUPERVISOR">SUPERVISOR (captura solo sus líneas)</option><option value="CENTRAL">ESTACIÓN CENTRAL (PC de producción; los supervisores capturan con su PIN)</option><option value="ADMIN">ADMIN (todo)</option></select>
               </label>
               <label class="campo">Líneas <input id="cr-lineas" placeholder="Ej. 1, 2"><small>Separadas por coma. Solo el SUPERVISOR las necesita.</small></label>
+              <label class="campo" id="cr-turno-campo">Turno (horario de acceso)
+                <select id="cr-turno"></select>
+                <small>Supervisor, practicante, técnico e ingeniero solo entran de 30 min antes a 30 min después de su turno.</small>
+              </label>
               <button type="submit" class="btn-prim" id="btn-crear">Crear usuario</button>
               <p class="login-msg" id="cr-msg"></p>
             </form>
@@ -648,6 +697,20 @@
         <div class="admin-caja tabla-wrap">
           <h3>Usuarios</h3>
           <div id="lista-usuarios"><div class="vacio">Cargando…</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-central" hidden>
+      <div class="cen-head">
+        <h2>Estación Central de Producción</h2>
+        <div class="cen-turnos" id="cen-turnos"></div>
+      </div>
+      <div class="cen-cols">
+        <div class="cen-lineas" id="cen-lineas"></div>
+        <div>
+          <div class="cen-caja alertas"><h3>Alertas andon</h3><div id="cen-alertas"></div></div>
+          <div class="cen-caja pend"><h3>Horas sin capturar</h3><div id="cen-pend"></div></div>
         </div>
       </div>
     </section>
@@ -763,6 +826,13 @@
       <h3 id="cap-titulo">Capturar</h3>
       <div class="modal-sub" id="cap-sub"></div>
       <form class="form" id="form-captura" novalidate>
+        <div class="cap-central" id="cap-central" hidden>
+          <div class="fila2">
+            <label class="campo">Supervisor que captura <select id="cap-sup"></select></label>
+            <label class="campo">PIN <input id="cap-pin" type="text" inputmode="numeric" maxlength="4" autocomplete="off" spellcheck="false"></label>
+          </div>
+          <small>La captura queda firmada por el supervisor. Su PIN lo crea él desde su cuenta (botón «Mi PIN»).</small>
+        </div>
         <label class="campo">Producción real (piezas)
           <input id="cap-real" type="number" inputmode="numeric" min="0" max="100000" step="1">
         </label>
@@ -1222,7 +1292,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
     import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getDocFromCache,
              doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where,
-             serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+             serverTimestamp, deleteField } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut }
       from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
@@ -1684,6 +1754,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
     function pintarPizarron(p) {
       if (p !== undefined) { pizarronActual = p; setTimeout(() => { atenderQR(); revisarRecordatorios(); }, 0); }
+      setTimeout(() => { try { if (!$("panel-central").hidden) pintarCentral(); } catch (e) { console.error("central", e); } }, 0);
       p = pizarronActual;
       const cont = $("board");
       if (!p) { vacio(cont, "El pizarrón todavía no se publica. Ejecuta publicarResumenEnFirestore en Apps Script."); return; }
@@ -1776,7 +1847,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           metaTurnoLinea[i] += metaL;
           let v = Array.isArray(l.real) ? l.real[idx] : null;
           // Capturas hechas desde esta página que todavía no llegan a la hoja (o que fueron rechazadas)
-          const cap = esHoy ? capturasHoy.get(kCap(inst.fechaId, l.linea, idx)) : null;
+          const cap = esHoy ? (capturasHoy.get(kCap(inst.fechaId, l.linea, idx)) || capturasCentral.get(kCap(inst.fechaId, l.linea, idx))) : null;
           let marca = "", aviso = "";
           if (cap && cap.estado === "pendiente") { v = cap.real; marca = "pend"; aviso = "Guardado, pasando a la hoja…"; }
           else if (cap && cap.estado === "rechazado") { marca = "rech"; aviso = "Captura rechazada: " + (cap.motivo || ""); }
@@ -1873,6 +1944,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (perfilActual && esHoy && !soloVer(perfilActual.rol)) {
         const txt = perfilActual.rol === "ADMIN"
           ? "Eres ADMIN: toca cualquier celda de una hora que ya empezó para capturar. Doble clic en una hora para cambiar el horario del turno."
+          : perfilActual.rol === "CENTRAL"
+          ? "Estación central: toca la celda de la hora y el supervisor de esa línea captura con su usuario y PIN."
           : "Toca una celda de tu línea (" + (perfilActual.lineas || []).join(", ") + ") en una hora que ya empezó para capturar.";
         piezas.push(el("div", "ayuda-captura", txt));
       }
@@ -2151,6 +2224,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       INGENIERO: "INGENIERO (opera MTTO y EHS + resumen de producción; no captura producción)",
       TECNICO: "TECNICO (opera MTTO y EHS; no captura producción)",
       PRACTICANTE: "PRACTICANTE (tablero, Plan Overview, SekaIA, resumen de producción y pedir su pase)",
+      CENTRAL: "CENTRAL = Estación central (PC de producción; los supervisores capturan ahí con su PIN)",
       CONSULTA: "CONSULTA (solo ver)"
     };
     // "Técnico" con acento o "Gerente" también se aceptan al escribir un rol
@@ -2164,10 +2238,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       document.querySelectorAll("[data-abrir]").forEach((b) => { b.hidden = !puedeVerModulo(b.dataset.abrir); });
       [["btn-plan", "PLAN"], ["btn-sekaia", "SEKAIA"], ["btn-modo-tv", "TV"]].forEach(([id, k]) => { const b = $(id); if (b) b.hidden = !puedeVerModulo(k); });
     }
-    const soloVer = (rol) => rol !== "ADMIN" && rol !== "SUPERVISOR";
+    const soloVer = (rol) => rol !== "ADMIN" && rol !== "SUPERVISOR" && rol !== "CENTRAL";
+    const esCentral = () => perfilActual?.rol === "CENTRAL";
     function puedeEditarLinea(linea) {
       if (!perfilActual || perfilActual.activo !== true) return false;
-      if (perfilActual.rol === "ADMIN") return true;
+      if (perfilActual.rol === "ADMIN" || perfilActual.rol === "CENTRAL") return true;   // en la central firma el supervisor con su PIN
       if (perfilActual.rol !== "SUPERVISOR") return false;
       return (perfilActual.lineas || []).map(String).includes(String(linea));
     }
@@ -2231,8 +2306,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       }, (err) => console.warn("[Asignaciones]", err));
     }
     function detenerEscuchas() {
-      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes, cancelarAsignaciones, cancelarSistema, cancelarLicencia].forEach((f) => { if (f) f(); });
-      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = cancelarAsignaciones = cancelarSistema = cancelarLicencia = null;
+      [cancelar, cancelarCapturas, cancelarPerfil, cancelarUsuarios, cancelarHorarios, cancelarPendientes, cancelarAsignaciones, cancelarSistema, cancelarLicencia, cancelarSupCentral].forEach((f) => { if (f) f(); });
+      cancelar = cancelarCapturas = cancelarPerfil = cancelarUsuarios = cancelarHorarios = cancelarPendientes = cancelarAsignaciones = cancelarSistema = cancelarLicencia = cancelarSupCentral = null;
       pendientesAntes = -1;
     }
     const detener = detenerEscuchas;
@@ -2266,6 +2341,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("modal-tv").hidden = true;
       quitarEspera();
       $("recordatorio").hidden = true;
+      $("aviso-horario").hidden = true;
+      $("panel-central").hidden = true;
       $("btn-avisos").hidden = true; $("btn-instalar").hidden = true;
       $("login").hidden = false;
       $("btn-entrar").disabled = false;
@@ -2278,11 +2355,15 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const p = perfilActual;
       const caja = $("usuario");
       const rol = p.rol === "ADMIN" ? el("span", "rol admin", "ADMIN")
+                : p.rol === "CENTRAL" ? el("span", "rol", "ESTACIÓN CENTRAL")
                 : soloVer(p.rol) ? el("span", "rol con", p.rol || "CONSULTA")
                 : el("span", "rol", "Línea " + (p.lineas || []).join(", "));
       caja.replaceChildren(document.createTextNode((p.nombre || p.usuario) + " (" + p.usuario + ") "), rol);
       $("btn-admin").hidden = p.rol !== "ADMIN";
+      $("btn-pin").hidden = p.rol !== "SUPERVISOR";
       document.body.classList.toggle("es-admin", p.rol === "ADMIN");
+      document.body.classList.toggle("es-central", p.rol === "CENTRAL");
+      $("panel-central").hidden = !(p.rol === "CENTRAL" || (p.rol === "ADMIN" && new URLSearchParams(location.search).get("ver") === "central"));
       aplicarPermisosBotones();
       if (p.rol !== "ADMIN") cerrarAdmin();
     }
@@ -2318,6 +2399,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       try {
         const snap = await getDoc(doc(db, "config", "lineas"));
         const lineas = snap.exists() ? (snap.data().lineas || []).map(String) : [];
+        turnosCatalogo = snap.exists() ? (snap.data().turnos || []).map(String) : [];
+        llenarTurnos($("al-turno"), turnosCatalogo, "", "Selecciona tu turno");
         const primera = el("option", null, lineas.length ? "Selecciona tu línea" : "No hay líneas publicadas todavía");
         primera.value = "";
         sel.replaceChildren(primera, ...lineas.map((l) => { const o = el("option", null, "Línea " + l); o.value = l; return o; }));
@@ -2351,12 +2434,15 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const linea = $("al-linea").value;
       const puesto = $("al-puesto").value;
       const esSup = puesto === "SUPERVISOR";
+      const turno = $("al-turno").value;
+      const conHorario = ROLES_CON_HORARIO.includes(puesto);
       const codigo = $("al-codigo").value.trim();
       if (nombre.length < 3) return msgLogin("Escribe tu nombre completo.");
       if (!USUARIO_RE.test(u)) return msgLogin("El usuario debe tener de 3 a 30 caracteres: letras, números, punto, guion o guion bajo.");
       if (p.length < 6) return msgLogin("La contraseña debe tener al menos 6 caracteres.");
       if (p !== p2) return msgLogin("Las contraseñas no coinciden.");
       if (esSup && !linea) return msgLogin("Selecciona la línea de la que eres encargado.");
+      if (conHorario && !turno) return msgLogin(turnosCatalogo.length ? "Selecciona tu turno." : "Todavía no hay turnos publicados. Pide al administrador que los publique.");
       if (!codigo) return msgLogin("Escribe el código de registro.");
 
       $("btn-alta").disabled = true;
@@ -2368,7 +2454,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           await setDoc(doc(db, "usuarios", cred.user.uid), {
             usuario: u, nombre: nombre.toUpperCase(), activo: true, creadoEn: serverTimestamp(), codigo,
             // Todos entran en espera: nadie ve ni modifica nada hasta que el ADMIN apruebe la cuenta.
-            lineas: esSup ? [String(linea)] : [], rol: "PENDIENTE", solicita: puesto
+            lineas: esSup ? [String(linea)] : [], rol: "PENDIENTE", solicita: puesto,
+            ...(conHorario ? { turno } : {})
           });
         } catch (e) {
           // Código incorrecto u otro rechazo: se borra la cuenta recién creada para no dejarla a medias.
@@ -2407,6 +2494,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           return;
         }
         if (d.rol === "PENDIENTE") { mostrarEspera(u.uid, d); return; }
+        const fuera = fueraDeHorario(d);
+        if (fuera) { mensajePendiente = fuera; await signOut(auth); return; }
         perfilActual = { uid: u.uid, ...d };
         baseSesionDesde = aMillis(d.sesionDesde);
         primeroPanico = true;    // la primera lectura de config/sistema fija la base
@@ -2418,6 +2507,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         escucharCapturas();
         escucharHorarios();
         escucharAsignaciones();
+        if (d.rol === "CENTRAL" || d.rol === "ADMIN") escucharSupervisoresCentral();
+        avisoHorarioMostrado = false;
         actualizarBotonAvisos();
         if (instalarEvento) $("btn-instalar").hidden = false;
         const ver = new URLSearchParams(location.search).get("ver");
@@ -2480,6 +2571,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         perfilActual = { uid, ...d2 };
         pintarUsuarioActual();
         if (pizarronActual) pintarPizarron();
+        revisarHorario();
       }, (err) => console.warn("[Perfil]", err));
     }
 
@@ -2515,7 +2607,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         }, (err) => {
           console.error("[WorkPulse Live]", err);
           mostrarError(err?.code === "permission-denied"
-            ? "Tu usuario no tiene permiso para ver el tablero. Habla con un administrador."
+            ? (perfilActual?.horario ? "Fuera de tu horario de acceso (" + textoHorario(perfilActual.horario) + "). Si estás en tiempo extra, pide al administrador que te quite el horario."
+                                     : "Tu usuario no tiene permiso para ver el tablero. Habla con un administrador.")
             : mensajeDeError(err));
         });
       } catch (err) {
@@ -2539,7 +2632,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         if (!inst.capturable) return;
         const filas = horasDeTurno(turno);
         lineasDelTurno(turno, "").forEach((l) => {
-          if (perfilActual.rol !== "ADMIN" && !mias.includes(String(l.linea))) return;
+          if (perfilActual.rol !== "ADMIN" && perfilActual.rol !== "CENTRAL" && !mias.includes(String(l.linea))) return;
           filas.forEach((f) => {
             const meta = parseInt(l.metas?.[f.idx], 10) || 0;
             if (meta <= 0) return;
@@ -2566,7 +2659,8 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function revisarRecordatorios() {
       const lista = faltantes();
       const caja = $("recordatorio");
-      if (!lista.length || Date.now() < recOcultoHasta || !$("plan").hidden || !$("tv").hidden) { caja.hidden = true; }
+      // En la estación central las horas sin capturar ya están en su panel (no se tapa la pantalla)
+      if (!lista.length || Date.now() < recOcultoHasta || !$("plan").hidden || !$("tv").hidden || esCentral()) { caja.hidden = true; }
       else {
         $("rec-lista").replaceChildren(...lista.slice(0, 5).map(({ l, f }) => {
           const li = el("li");
@@ -2884,6 +2978,271 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     window.addEventListener("popstate", () => { if (!$("plan").hidden) cerrarPlan(true); });
     setInterval(() => { if (!$("plan").hidden) pintarPlan(); }, 60000);     // la "hora actual" avanza sola
 
+    // ---------- HORARIO DE ACCESO POR TURNO ----------
+    // Supervisor, practicante, técnico e ingeniero: de 30 min antes de su entrada a 30 min después de su salida.
+    // Apps Script guarda horario = { ini, fin } (minutos del día) en el perfil y las Reglas de Firestore lo revisan
+    // en cada lectura. Aquí solo se avisa y se cierra la sesión a tiempo (la seguridad real está en las Reglas).
+    const ROLES_CON_HORARIO = ["SUPERVISOR", "PRACTICANTE", "TECNICO", "INGENIERO"];
+    const TOLERANCIA_HORARIO = 30;
+    let turnosCatalogo = [];
+    let avisoHorarioMostrado = false;
+    const aHoraMin = (m) => pad2(Math.floor((((m % 1440) + 1440) % 1440) / 60)) + ":" + pad2((((m % 1440) + 1440) % 1440) % 60);
+    function horarioDeTurno(turno) {
+      const r = rangoTurno(turno);
+      if (!r) return null;
+      if (r.fin - r.ini + 2 * TOLERANCIA_HORARIO >= 1440) return null;
+      return { ini: ((r.ini - TOLERANCIA_HORARIO) % 1440 + 1440) % 1440, fin: (r.fin + TOLERANCIA_HORARIO) % 1440 };
+    }
+    function horarioDe(p) {
+      const rol = p?.rol === "PENDIENTE" ? p?.solicita : p?.rol;
+      if (!p || !ROLES_CON_HORARIO.includes(rol)) return null;
+      if (p.horario && Number.isFinite(p.horario.ini) && Number.isFinite(p.horario.fin)) return p.horario;
+      return p.turno ? horarioDeTurno(p.turno) : null;
+    }
+    const textoHorario = (h) => h ? aHoraMin(h.ini) + " a " + aHoraMin(h.fin) : "cualquier hora";
+    const dentroDeHorario = (h, m) => !h || (h.ini <= h.fin ? (m >= h.ini && m <= h.fin) : (m >= h.ini || m <= h.fin));
+    const minutoAhora = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+    function fueraDeHorario(p) {
+      const h = horarioDe(p);
+      if (dentroDeHorario(h, minutoAhora())) return "";
+      return "Fuera de tu horario. Tu turno " + String(p.turno || "").split("/")[0].trim() + " puede entrar de " + textoHorario(h) +
+             " (30 min antes de tu entrada a 30 min después de tu salida).";
+    }
+    function minutosParaCierre(h) {
+      if (!h) return Infinity;
+      return (((h.fin - minutoAhora()) % 1440) + 1440) % 1440;
+    }
+    async function revisarHorario() {
+      if (!perfilActual || !auth?.currentUser) return;
+      const fuera = fueraDeHorario(perfilActual);
+      if (fuera) {
+        mensajePendiente = fuera;
+        await signOut(auth);
+        return;
+      }
+      const h = horarioDe(perfilActual), falta = minutosParaCierre(h);
+      const aviso = $("aviso-horario");
+      if (falta <= 10) {
+        aviso.textContent = "Tu horario termina a las " + aHoraMin(h.fin) + ": la sesión se cierra en " + Math.max(1, falta) + " min. Guarda lo que estés capturando.";
+        aviso.hidden = false;
+        if (!avisoHorarioMostrado) { avisoHorarioMostrado = true; notificar("WorkPulse", aviso.textContent, "horario"); }
+      } else aviso.hidden = true;
+    }
+    function llenarTurnos(sel, turnos, valor, textoVacio) {
+      const vacio = el("option", null, textoVacio); vacio.value = "";
+      sel.replaceChildren(vacio, ...turnos.map((t) => {
+        const h = horarioDeTurno(t);
+        const o = el("option", null, t + (h ? "   (entra " + textoHorario(h) + ")" : "")); o.value = t; return o;
+      }));
+      sel.value = turnos.includes(valor) ? valor : "";
+    }
+    function todosLosTurnos() {
+      const vistos = new Set(), lista = [];
+      [...turnosCatalogo, ...listaTurnos()].forEach((t) => { t = String(t || "").trim(); if (t && !vistos.has(norm(t))) { vistos.add(norm(t)); lista.push(t); } });
+      return lista;
+    }
+    // Cambios del perfil al poner rol o turno: el horario se calcula ya (Apps Script lo confirma en 2 min)
+    function cambiosHorario(rol, turno) {
+      const h = (turno && ROLES_CON_HORARIO.includes(rol)) ? horarioDeTurno(turno) : null;
+      return { horario: h ? h : deleteField() };
+    }
+    function cambiarTurno(u) {
+      const turnos = todosLosTurnos();
+      if (!turnos.length) { alert("Todavía no hay turnos publicados."); return; }
+      const lista = turnos.map((t, i) => (i + 1) + " = " + t + (horarioDeTurno(t) ? "  (entra " + textoHorario(horarioDeTurno(t)) + ")" : "")).join("\n");
+      const txt = prompt("Turno de " + u.usuario + " (ahora: " + (u.turno || "ninguno") + ").\nEscribe el número:\n0 = Sin horario (tiempo extra / entra a cualquier hora)\n" + lista, "");
+      if (txt === null) return;
+      const n = parseInt(txt, 10);
+      if (!(n >= 0 && n <= turnos.length)) { alert("Número no válido."); return; }
+      const rol = u.rol === "PENDIENTE" ? u.solicita : u.rol;
+      if (n === 0) { actualizarPerfil(u, { turno: deleteField(), horario: deleteField() }, u.usuario + ": sin horario (entra a cualquier hora)"); return; }
+      const t = turnos[n - 1];
+      const cambios = { turno: t };
+      if (u.rol !== "PENDIENTE") Object.assign(cambios, cambiosHorario(rol, t));
+      const h = ROLES_CON_HORARIO.includes(rol) ? horarioDeTurno(t) : null;
+      actualizarPerfil(u, cambios, u.usuario + ": turno " + t.split("/")[0].trim() + (h ? " · entra " + textoHorario(h) : ""));
+    }
+
+    // ---------- PIN DEL SUPERVISOR (para capturar en la PC central) ----------
+    async function ponerMiPin() {
+      if (perfilActual?.rol !== "SUPERVISOR") return;
+      const a = prompt("Escribe tu PIN nuevo de 4 dígitos.\nCon él capturas tus líneas en la PC central. No lo compartas.");
+      if (a === null) return;
+      if (!/^[0-9]{4}$/.test(a.trim())) { alert("El PIN debe ser de 4 números."); return; }
+      if (/^(\d)\1{3}$/.test(a.trim()) || ["1234", "4321", "0123", "9876"].includes(a.trim())) { alert("Ese PIN es muy fácil de adivinar. Elige otro."); return; }
+      const b = prompt("Escríbelo otra vez para confirmar:");
+      if (b === null) return;
+      if (a.trim() !== b.trim()) { alert("Los PIN no coinciden."); return; }
+      try {
+        await setDoc(doc(db, "pines", auth.currentUser.uid), { pin: a.trim(), creadoEn: serverTimestamp() });
+        avisarPresencia();
+        toast("PIN guardado. Queda activo en aprox. 1 minuto.");
+      } catch (e) {
+        alert("No se pudo guardar el PIN: " + mensajeAuth(e));
+      }
+    }
+
+    // ---------- ESTACIÓN CENTRAL DE PRODUCCIÓN ----------
+    // Una PC fija en producción con el usuario CENTRAL. Muestra todas las líneas en curso, las horas sin capturar
+    // y las alertas andon. Los supervisores capturan ahí: eligen su nombre y ponen su PIN; Apps Script revisa el PIN,
+    // su línea y su horario, y guarda la captura en la hoja firmada por ese supervisor.
+    let supervisoresCentral = [];
+    let cancelarSupCentral = null;
+    const capturasCentral = new Map();      // capturas mandadas desde esta PC que todavía no llegan al pizarrón
+    function escucharSupervisoresCentral() {
+      if (cancelarSupCentral) cancelarSupCentral();
+      cancelarSupCentral = onSnapshot(doc(db, "config", "supervisoresCentral"), (snap) => {
+        supervisoresCentral = snap.exists() ? (snap.data().lista || []) : [];
+      }, (err) => console.warn("[Supervisores central]", err));
+    }
+    function prepararFirmaCentral(l) {
+      const sel = $("cap-sup");
+      const deLinea = supervisoresCentral.filter((s) => (s.lineas || []).map(String).includes(String(l.linea)));
+      const primera = el("option", null, deLinea.length ? "Elige tu nombre" : "Ningún supervisor tiene la Línea " + l.linea); primera.value = "";
+      sel.replaceChildren(primera, ...deLinea.map((s) => {
+        const o = el("option", null, (s.nombre || s.usuario) + " (" + s.usuario + ")" + (s.tienePin ? "" : " · sin PIN"));
+        o.value = s.usuario; return o;
+      }));
+      // Si en el pizarrón la línea tiene supervisor asignado y coincide, se elige solo
+      const asignado = norm(l.supervisor);
+      const match = deLinea.find((s) => asignado && (norm(s.nombre) === asignado || norm(s.usuario) === asignado));
+      sel.value = match ? match.usuario : (deLinea.length === 1 ? deLinea[0].usuario : "");
+      $("cap-pin").value = "";
+    }
+    async function guardarCapturaCentral(datos) {
+      const sup = $("cap-sup").value, pin = $("cap-pin").value.trim();
+      if (!sup) { $("cap-msg").textContent = "Elige el supervisor que captura."; return; }
+      if (!/^[0-9]{4}$/.test(pin)) { $("cap-msg").textContent = "Escribe el PIN de 4 dígitos."; $("cap-pin").focus(); return; }
+      const envio = { uid: datos.uid, supervisor: sup, pin, linea: datos.linea, fechaId: datos.fechaId, fecha: datos.fecha,
+                      horaIndex: datos.horaIndex, real: datos.real, falla: datos.falla, comentario: datos.comentario,
+                      estado: "pendiente", creadoEn: serverTimestamp() };
+      CAMPOS_6M.forEach((c) => { envio[c] = datos[c]; });
+      const clave = kCap(datos.fechaId, datos.linea, datos.horaIndex);
+      $("cap-guardar").disabled = true;
+      $("cap-guardar").textContent = "Revisando PIN…";
+      $("cap-msg").textContent = "";
+      let ref;
+      try {
+        ref = await addDoc(collection(db, "capturas_central"), envio);
+      } catch (e) {
+        $("cap-msg").textContent = e?.code === "permission-denied" ? "Esta computadora no tiene permiso para capturar (usuario CENTRAL)." : mensajeAuth(e);
+        $("cap-guardar").disabled = false; $("cap-guardar").textContent = "Guardar";
+        return;
+      }
+      avisarPresencia();             // así Apps Script la revisa en segundos
+      capturasCentral.set(clave, { real: datos.real, estado: "pendiente" });
+      if (pizarronActual) pintarPizarron();
+      $("cap-msg").classList.add("ok-msg");
+      $("cap-msg").textContent = "Enviado. Revisando el PIN… (puede tardar hasta 1 minuto; puedes cerrar esta ventana)";
+      const linea = datos.linea, idx = datos.horaIndex;
+      const fin = Date.now() + 4 * 60000;
+      while (Date.now() < fin) {
+        await new Promise((r) => setTimeout(r, 4000));
+        let snap = null;
+        try { snap = await getDoc(ref); } catch (e) { continue; }     // sin permiso = todavía tiene el PIN (no se ha revisado)
+        if (!snap.exists()) continue;
+        const r = snap.data();
+        const abierta = !$("modal-captura").hidden && capturaActual && capturaActual.linea === linea && capturaActual.idx === idx;
+        $("cap-msg").classList.remove("ok-msg");
+        if (r.estado === "sincronizado") {
+          setTimeout(() => { if (capturasCentral.get(clave)?.estado === "pendiente") { capturasCentral.delete(clave); if (pizarronActual) pintarPizarron(); } }, 3 * 60000);
+          toast("Línea " + linea + ": captura guardada (firmó " + sup + ").", 5000);
+          if (abierta) cerrarCaptura();
+        } else {
+          capturasCentral.set(clave, { estado: "rechazado", motivo: r.motivo || "" });
+          if (pizarronActual) pintarPizarron();
+          if (abierta) {
+            $("cap-msg").textContent = "No se guardó: " + String(r.motivo || "rechazada").replace(/\.$/, "") + ".";
+            $("cap-pin").value = ""; $("cap-guardar").disabled = false; $("cap-guardar").textContent = "Guardar";
+          } else toast("Línea " + linea + ": no se guardó. " + (r.motivo || ""), 8000);
+        }
+        return;
+      }
+      $("cap-msg").classList.remove("ok-msg");
+      $("cap-msg").textContent = "Apps Script no respondió en 4 minutos. Revisa que el activador del minuto esté encendido.";
+      $("cap-guardar").disabled = false; $("cap-guardar").textContent = "Guardar";
+    }
+    function pintarCentral() {
+      const p = pizarronActual;
+      const contL = $("cen-lineas"), contA = $("cen-alertas"), contP = $("cen-pend"), contT = $("cen-turnos");
+      if (!p) { vacio(contL, "Cargando el pizarrón…"); return; }
+      const turnos = listaTurnos().filter((t) => instanciaTurno(t).enCurso && lineasDelTurno(t, "").length);
+      contT.replaceChildren(...(turnos.length ? turnos.map((t) => el("span", null, "Turno " + t.split("/")[0].trim() + " · " + (String(t).split("/")[1] || "").trim()))
+                                                 : [el("span", null, "Sin turno en curso")]));
+      const tarjetas = [], alertas = [];
+      turnos.forEach((turno) => {
+        const inst = instanciaTurno(turno);
+        const filas = horasDeTurno(turno);
+        lineasDelTurno(turno, "").forEach((l) => {
+          let real = 0, metaCap = 0, metaTot = 0, ultima = null, pendientes = [];
+          filas.forEach((f) => {
+            const meta = parseInt(l.metas?.[f.idx], 10) || 0;
+            metaTot += meta;
+            let v = l.real?.[f.idx];
+            const cap = capturasHoy.get(kCap(inst.fechaId, l.linea, f.idx)) || capturasCentral.get(kCap(inst.fechaId, l.linea, f.idx));
+            if ((v === null || v === undefined || v === "") && cap && cap.estado === "pendiente") v = cap.real;
+            const empezo = inst.nowRel >= f.iniAbs - MINUTOS_ANTES;
+            if (v !== null && v !== undefined && v !== "") {
+              real += num(v); metaCap += meta;
+              const det = l.det?.[f.idx] || {};
+              const paro = CAMPOS_6M.reduce((a, c) => a + num(det[c]), 0);
+              ultima = { f, v: num(v), meta, paro };
+            } else if (empezo && meta > 0 && inst.nowRel >= f.iniAbs + durFila(f)) pendientes.push(f);
+          });
+          const pct = metaCap > 0 ? Math.round(real / metaCap * 100) : null;
+          const est = pct === null ? { bg: "#94a3b8", color: "#fff" } : andon(real, metaCap);
+          const card = el("div", "cen-linea");
+          card.style.borderLeftColor = est.bg;
+          const h4 = el("h4"); h4.append(el("span", null, "Línea " + l.linea), el("span", null, turno.split("/")[0].trim()));
+          const numEl = el("div", "cen-num", pct === null ? "—" : pct + "%");
+          numEl.title = "Rendimiento de las horas ya capturadas (real / meta)";
+          numEl.style.color = pct === null ? "#64748b" : (est.bg === "#fbff00" ? "#a16207" : est.bg);
+          const barra = el("div", "cen-barra"); const relleno = el("i"); relleno.style.width = Math.min(100, metaTot > 0 ? real / metaTot * 100 : 0) + "%";
+          relleno.style.background = est.bg === "#fbff00" ? "#eab308" : est.bg; barra.appendChild(relleno);
+          card.append(h4, el("div", "cen-sup", (l.supervisor || "SIN ASIGNAR") + (l.area ? " · " + l.area : "")), numEl,
+                      el("div", "cen-det", pct === null ? "Sin capturas todavía" : "rendimiento de las horas capturadas"),
+                      el("div", "cen-det", real.toLocaleString("es-MX") + " de " + metaTot.toLocaleString("es-MX") + " pzs del turno" +
+                         (ultima ? " · última hora " + ultima.v + "/" + ultima.meta : "")), barra);
+          const sig = pendientes[0] || filas.find((f) => inst.nowRel >= f.iniAbs - MINUTOS_ANTES && inst.nowRel < f.iniAbs + durFila(f));
+          if (sig && inst.capturable) {
+            const b = el("button", "cen-btn" + (pendientes.length ? "" : " al-dia"),
+                         pendientes.length ? "Capturar " + sig.ini + "–" + sig.fin + (pendientes.length > 1 ? " (+" + (pendientes.length - 1) + ")" : "") : "Capturar hora en curso");
+            b.type = "button";
+            b.addEventListener("click", () => abrirCapturaCentral(l, turno, sig.idx));
+            card.appendChild(b);
+          }
+          tarjetas.push(card);
+          if (ultima && ultima.meta > 0 && ultima.v / ultima.meta < 0.9)
+            alertas.push({ txt: "Línea " + l.linea + ": " + Math.round(ultima.v / ultima.meta * 100) + "% en " + ultima.f.ini + "–" + ultima.f.fin + " (" + ultima.v + "/" + ultima.meta + ")", l, turno, idx: ultima.f.idx });
+          if (ultima && ultima.paro >= 15)
+            alertas.push({ txt: "Línea " + l.linea + ": " + ultima.paro + " min de paro en " + ultima.f.ini + "–" + ultima.f.fin, l, turno, idx: ultima.f.idx });
+          if (pendientes.length >= 2)
+            alertas.push({ txt: "Línea " + l.linea + ": " + pendientes.length + " horas sin capturar", l, turno, idx: pendientes[0].idx });
+        });
+      });
+      if (tarjetas.length) contL.replaceChildren(...tarjetas); else vacio(contL, "No hay líneas trabajando en este momento.");
+      const item = (txt, fn, btn) => { const d = el("div", "cen-item"); d.appendChild(el("span", null, txt));
+        if (fn) { const b = el("button", null, btn); b.type = "button"; b.addEventListener("click", fn); d.appendChild(b); } return d; };
+      if (alertas.length) contA.replaceChildren(...alertas.map((a) => item(a.txt, () => abrirCapturaCentral(a.l, a.turno, a.idx), "Ver")));
+      else contA.replaceChildren(el("div", "cen-vacio", "Sin alertas: todas las líneas van en verde o amarillo."));
+      const falt = faltantes();
+      if (falt.length) contP.replaceChildren(...falt.slice(0, 30).map((x) => item("Línea " + x.l.linea + " · " + x.f.ini + "–" + x.f.fin + " · " + (x.l.supervisor || "sin supervisor"),
+                                                                                  () => abrirCapturaCentral(x.l, x.turno, x.f.idx), "Capturar")));
+      else contP.replaceChildren(el("div", "cen-vacio", "Todas las horas que ya terminaron están capturadas."));
+    }
+    // Abre la captura de esa línea/hora aunque el pizarrón de abajo muestre otro turno o área
+    function abrirCapturaCentral(l, turno, idx) {
+      const sel = $("sel-turno");
+      if (norm(sel.value) !== norm(turno) && [...sel.options].some((o) => o.value === turno)) {
+        sel.value = turno; $("sel-area").value = ""; pintarPizarron();
+      }
+      const fila = horasDeTurno(turno).find((f) => f.idx === idx);
+      if (fila) horasActuales = horasDeTurno(turno);
+      const lin = lineasDelTurno(turno, "").find((x) => String(x.linea) === String(l.linea)) || l;
+      const inst = instanciaTurno(turno);
+      abrirCaptura(lin, idx, capturasHoy.get(kCap(inst.fechaId, lin.linea, idx)) || null);
+    }
+
     // ---------- Captura de una hora ----------
     const CAMPOS_6M = ["hombre", "maquina", "material", "metodo", "calidad", "produccion", "otros"];
 
@@ -2901,12 +3260,17 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("cap-falla").value = valor(base.falla);
       $("cap-comentario").value = valor(base.comentario);
       $("cap-msg").textContent = "";
+      $("cap-msg").classList.remove("ok-msg");
       $("cap-guardar").disabled = false;
+      $("cap-guardar").textContent = "Guardar";
+      const central = esCentral();
+      $("cap-central").hidden = !central;
+      if (central) prepararFirmaCentral(l);
       $("modal-captura").hidden = false;
-      $("cap-real").focus();
+      (central ? $("cap-sup") : $("cap-real")).focus();
     }
 
-    function cerrarCaptura() { $("modal-captura").hidden = true; capturaActual = null; }
+    function cerrarCaptura() { $("modal-captura").hidden = true; capturaActual = null; $("cap-pin").value = ""; }
 
     async function guardarCaptura(ev) {
       ev.preventDefault();
@@ -2938,6 +3302,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         $("cap-msg").textContent = e.message;
         return;
       }
+      if (esCentral()) { await guardarCapturaCentral(datos); return; }
       const id = datos.fechaId + "_L" + datos.linea + "_H" + datos.horaIndex;
       $("cap-guardar").disabled = true;
       $("cap-msg").textContent = "";
@@ -2957,6 +3322,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     function abrirAdmin() {
       if (perfilActual?.rol !== "ADMIN") return;
       $("panel-admin").hidden = false;
+      llenarTurnos($("cr-turno"), todosLosTurnos(), $("cr-turno").value, "Sin horario (entra a cualquier hora)");
       $("panel-admin").scrollIntoView({ behavior: "smooth", block: "start" });
       escucharUsuarios();
       cargarCodigo();
@@ -2982,7 +3348,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       lista.sort((a, b) => ((b.rol === "PENDIENTE") - (a.rol === "PENDIENTE")) || String(a.usuario).localeCompare(String(b.usuario)));
       const t = el("table", "usuarios");
       const trh = el("tr");
-      ["Usuario", "Nombre", "Líneas", "Rol", "Estado", "Acciones"].forEach((x) => trh.appendChild(el("th", null, x)));
+      ["Usuario", "Nombre", "Líneas", "Turno / horario", "Rol", "Estado", "Acciones"].forEach((x) => trh.appendChild(el("th", null, x)));
       const thead = el("thead"); thead.appendChild(trh);
       const tbody = el("tbody");
       lista.forEach((u) => {
@@ -2990,6 +3356,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         const tr = el("tr");
         tr.append(el("td", "fuerte", u.usuario + (soyYo ? " (tú)" : "")), el("td", "izq", u.nombre || ""),
                   el("td", null, (u.lineas || []).join(", ") || "—"));
+        const tdTurno = el("td", "izq");
+        const hU = horarioDe(u);
+        tdTurno.append(el("div", null, u.turno ? String(u.turno) : "—"),
+                       el("small", null, hU ? "Entra " + textoHorario(hU) : (ROLES_CON_HORARIO.includes(u.rol === "PENDIENTE" ? u.solicita : u.rol) ? "Sin horario" : "Cualquier hora")));
+        tr.appendChild(tdTurno);
         const tdRol = el("td");
         if (u.rol === "PENDIENTE") { tr.classList.add("pendiente"); tdRol.appendChild(el("span", "chip pend", "PIDE: " + (u.solicita || "?"))); }
         else tdRol.appendChild(el("span", "chip " + (u.rol === "ADMIN" ? "admin" : soloVer(u.rol) ? "con" : "sup"), u.rol));
@@ -3001,11 +3372,13 @@ window.WP_MODULOS_HTML.kpi = function (res) {
           boton("Aprobar como " + (u.solicita || "CONSULTA"), () => aprobarUsuario(u), "aprobar");
           boton("Otro puesto", () => cambiarRol(u));
           boton("Líneas", () => editarLineas(u));
+          boton("Turno", () => cambiarTurno(u));
           boton("Rechazar", () => eliminarUsuario(u), "peligro");
           acc.appendChild(caja); tr.appendChild(acc); tbody.appendChild(tr);
           return;
         }
         boton("Líneas", () => editarLineas(u));
+        boton("Turno", () => cambiarTurno(u));
         boton("Contraseña", () => cambiarPassword(u));
         if (!soyYo) {
           boton("Rol", () => cambiarRol(u));
@@ -3043,7 +3416,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const que = rol === "SUPERVISOR" ? "Podrá ver todo y CAPTURAR en la Línea " + (u.lineas || []).join(", ") + "."
                 : (ROLES[rol] || "Podrá ver el tablero.");
       if (!confirm("¿Aprobar a " + (u.nombre || u.usuario) + " como " + rol + "?\n" + que)) return;
-      actualizarPerfil(u, { rol }, u.usuario + " aprobado como " + rol);
+      actualizarPerfil(u, { rol, ...cambiosHorario(rol, u.turno) }, u.usuario + " aprobado como " + rol);
     }
     function cambiarRol(u) {
       const txt = prompt("Rol de " + u.usuario + " (ahora: " + u.rol + "). Escribe uno:\n" +
@@ -3053,7 +3426,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       if (!ROLES[nuevo]) { alert("Rol no válido. Usa: " + Object.keys(ROLES).filter((k) => k !== "CONSULTA").join(", ") + "."); return; }
       if (nuevo === u.rol) return;
       if (nuevo === "SUPERVISOR" && !(u.lineas || []).length) { alert("Primero asígnale al menos una línea con el botón \"Líneas\"."); return; }
-      actualizarPerfil(u, { rol: nuevo }, u.usuario + " ahora es " + nuevo);
+      actualizarPerfil(u, { rol: nuevo, ...cambiosHorario(nuevo, u.turno) }, u.usuario + " ahora es " + nuevo);
     }
 
     async function botonPanico() {
@@ -3124,11 +3497,13 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const p = $("cr-pass").value;
       const rol = $("cr-rol").value;
       const lineas = lineasDeTexto($("cr-lineas").value);
+      const turnoCr = $("cr-turno").value;
       msg.classList.remove("ok-msg");
       if (nombre.length < 3) { msg.textContent = "Escribe el nombre completo."; return; }
       if (!USUARIO_RE.test(u)) { msg.textContent = "Usuario inválido: 3 a 30 caracteres (letras, números, . _ -)."; return; }
       if (p.length < 6) { msg.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
       if (rol === "SUPERVISOR" && !lineas.length) { msg.textContent = "Un supervisor necesita al menos una línea."; return; }
+      if (ROLES_CON_HORARIO.includes(rol) && !turnoCr && !confirm("No elegiste turno: " + rol + " podrá entrar a cualquier hora. ¿Crear así?")) return;
 
       $("btn-crear").disabled = true;
       msg.textContent = "Creando…";
@@ -3140,7 +3515,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         try {
           await setDoc(doc(db, "usuarios", cred.user.uid), {
             usuario: u, nombre: nombre.toUpperCase(), lineas, rol, activo: true,
-            creadoEn: serverTimestamp(), creadoPor: perfilActual.usuario
+            creadoEn: serverTimestamp(), creadoPor: perfilActual.usuario,
+            ...(turnoCr ? { turno: turnoCr } : {}),
+            ...(turnoCr && ROLES_CON_HORARIO.includes(rol) && horarioDeTurno(turnoCr) ? { horario: horarioDeTurno(turnoCr) } : {})
           });
         } catch (e) {
           try { await cred.user.delete(); } catch (_) { /* queda para borrar a mano */ }
@@ -3521,6 +3898,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const alCambiarPuesto = () => {
         const v = $("al-puesto").value;
         $("al-linea-campo").hidden = v !== "SUPERVISOR";
+        $("al-turno-campo").hidden = !ROLES_CON_HORARIO.includes(v);
         $("al-puesto-nota").textContent = "El administrador aprueba tu cuenta; después " + (NOTA_PUESTO[v] || "podrás ver el tablero.");
       };
       $("al-puesto").addEventListener("change", alCambiarPuesto);
@@ -3533,6 +3911,12 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("modal-captura").addEventListener("click", (e) => { if (e.target === $("modal-captura")) cerrarCaptura(); });
       document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("modal-captura").hidden) cerrarCaptura(); });
       $("btn-admin").addEventListener("click", abrirAdmin);
+      $("btn-pin").addEventListener("click", ponerMiPin);
+      $("cap-pin").addEventListener("input", () => { $("cap-pin").value = $("cap-pin").value.replace(/\D/g, "").slice(0, 4); });
+      const alCambiarRolCr = () => { $("cr-turno-campo").hidden = !ROLES_CON_HORARIO.includes($("cr-rol").value); };
+      $("cr-rol").addEventListener("change", alCambiarRolCr); alCambiarRolCr();
+      setInterval(revisarHorario, 30000);
+      setInterval(() => { if (perfilActual && !$("panel-central").hidden) pintarCentral(); }, 60000);
       $("cerrar-admin").addEventListener("click", cerrarAdmin);
       $("form-crear").addEventListener("submit", crearUsuario);
       $("form-codigo").addEventListener("submit", guardarCodigo);

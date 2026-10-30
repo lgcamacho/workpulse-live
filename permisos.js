@@ -42,7 +42,9 @@
   // Puestos que ven todo MENOS estos (Personal y Equipos son de administración)
   var MENOS = {
     TECNICO: ["ADMIN", "PRODUCCION", "RESPROD", "HISTORIAL", "PERSONAL", "EQUIPOS"],
-    INGENIERO: ["ADMIN", "PRODUCCION", "HISTORIAL", "PERSONAL", "EQUIPOS"]
+    INGENIERO: ["ADMIN", "PRODUCCION", "HISTORIAL", "PERSONAL", "EQUIPOS"],
+    // PC central de producción: ve todo lo de planta; no administra usuarios, personal ni equipos
+    CENTRAL: ["ADMIN", "PERSONAL", "EQUIPOS"]
   };
 
   function puedeVer(rol, clave) {
@@ -62,6 +64,7 @@
     GERENCIA: "Gerente",
     SUPERVISOR: "Supervisor",
     ADMIN: "Admin",
+    CENTRAL: "Estación central",
     CONSULTA: "Consulta"
   };
 

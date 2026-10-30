@@ -4,7 +4,7 @@
 //   la primera vez y después se cargan al instante (no cambian nunca).
 // - sekaia.js, íconos y manifiesto: se muestran de lo guardado y se actualizan en segundo plano.
 // - Los DATOS (Firestore, inicio de sesión, Google) NO pasan por aquí: van directo a la red.
-const VERSION = "wp-v2";
+const VERSION = "wp-v3";
 const LIBS = "wp-libs-v1";
 const BASICOS = ["./", "index.html", "sistema.html", "sekaia.js", "manifest.webmanifest", "icono-180.png", "icono-192.png", "icono-512.png"];
 const LIB_VERSIONADA = [
