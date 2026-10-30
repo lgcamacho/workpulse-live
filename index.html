@@ -2361,6 +2361,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       caja.replaceChildren(document.createTextNode((p.nombre || p.usuario) + " (" + p.usuario + ") "), rol);
       $("btn-admin").hidden = p.rol !== "ADMIN";
       $("btn-pin").hidden = p.rol !== "SUPERVISOR";
+      $("btn-pin").textContent = p.tienePin === true ? "Mi PIN ✓" : "Crear mi PIN";
       document.body.classList.toggle("es-admin", p.rol === "ADMIN");
       document.body.classList.toggle("es-central", p.rol === "CENTRAL");
       $("panel-central").hidden = !(p.rol === "CENTRAL" || (p.rol === "ADMIN" && new URLSearchParams(location.search).get("ver") === "central"));
@@ -3066,7 +3067,11 @@ window.WP_MODULOS_HTML.kpi = function (res) {
     // ---------- PIN DEL SUPERVISOR (para capturar en la PC central) ----------
     async function ponerMiPin() {
       if (perfilActual?.rol !== "SUPERVISOR") return;
-      const a = prompt("Escribe tu PIN nuevo de 4 dígitos.\nCon él capturas tus líneas en la PC central. No lo compartas.");
+      if (perfilActual.tienePin === true) {
+        alert("Ya tienes tu PIN. Es único y no se puede cambiar.\nSi se te olvidó, pídeselo al administrador.");
+        return;
+      }
+      const a = prompt("Crea tu PIN de 4 dígitos para capturar en la PC central.\nOJO: es ÚNICO, después ya no lo podrás cambiar. No lo compartas.");
       if (a === null) return;
       if (!/^[0-9]{4}$/.test(a.trim())) { alert("El PIN debe ser de 4 números."); return; }
       if (/^(\d)\1{3}$/.test(a.trim()) || ["1234", "4321", "0123", "9876"].includes(a.trim())) { alert("Ese PIN es muy fácil de adivinar. Elige otro."); return; }
@@ -3076,9 +3081,9 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       try {
         await setDoc(doc(db, "pines", auth.currentUser.uid), { pin: a.trim(), creadoEn: serverTimestamp() });
         avisarPresencia();
-        toast("PIN guardado. Queda activo en aprox. 1 minuto.");
+        toast("PIN guardado. Queda activo en aprox. 1 minuto.", 5000);
       } catch (e) {
-        alert("No se pudo guardar el PIN: " + mensajeAuth(e));
+        alert(e?.code === "permission-denied" ? "Ya tienes un PIN. Si se te olvidó, pídeselo al administrador." : "No se pudo guardar el PIN: " + mensajeAuth(e));
       }
     }
 
@@ -3121,9 +3126,10 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       $("cap-guardar").disabled = true;
       $("cap-guardar").textContent = "Revisando PIN…";
       $("cap-msg").textContent = "";
-      let ref;
+      const ref = doc(collection(db, "capturas_central"));       // id nuevo sin esperar al servidor
       try {
-        ref = await addDoc(collection(db, "capturas_central"), envio);
+        const r0 = await Promise.race([setDoc(ref, envio).then(() => "ok", (e) => e), new Promise((r) => setTimeout(() => r("espera"), 3000))]);
+        if (r0 !== "ok" && r0 !== "espera") throw r0;
       } catch (e) {
         $("cap-msg").textContent = e?.code === "permission-denied" ? "Esta computadora no tiene permiso para capturar (usuario CENTRAL)." : mensajeAuth(e);
         $("cap-guardar").disabled = false; $("cap-guardar").textContent = "Guardar";
@@ -3306,15 +3312,27 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const id = datos.fechaId + "_L" + datos.linea + "_H" + datos.horaIndex;
       $("cap-guardar").disabled = true;
       $("cap-msg").textContent = "";
-      try {
-        await setDoc(doc(db, "capturas", id), datos);
+      $("cap-guardar").textContent = "Guardando…";
+      // La captura se guarda primero en el equipo y Firebase la sube en cuanto hay señal. La promesa de setDoc
+      // solo termina cuando el servidor confirma; con mala señal (o la app abierta en otra pestaña) eso puede
+      // tardar, y la ventana se quedaba "congelada". Ahora: si en 3 s no hay error, se cierra y se avisa.
+      const escritura = setDoc(doc(db, "capturas", id), datos);
+      const motivoError = (e) => e?.code === "permission-denied"
+        ? "No tienes permiso para capturar en la Línea " + datos.linea + (perfilActual?.horario ? " (o estás fuera de tu horario)." : ".")
+        : mensajeAuth(e);
+      const res = await Promise.race([
+        escritura.then(() => "ok", (e) => e),
+        new Promise((r) => setTimeout(() => r("espera"), 3000))
+      ]);
+      if (res === "ok" || res === "espera") {
         cerrarCaptura();
-        toast("Guardado. Se pasa a la hoja en aprox. 1 minuto.");
-      } catch (e) {
-        $("cap-msg").textContent = e?.code === "permission-denied"
-          ? "No tienes permiso para capturar en la Línea " + datos.linea + "."
-          : mensajeAuth(e);
+        toast(res === "ok" ? "Guardado. Se pasa a la hoja en aprox. 1 minuto."
+                           : "Guardado en este equipo. Se sube en cuanto haya señal (verás el punto ámbar en la celda).", 5000);
+        if (res === "espera") escritura.catch((e) => toast("No se guardó la Línea " + datos.linea + ": " + motivoError(e), 9000));
+      } else {
+        $("cap-msg").textContent = motivoError(res);
         $("cap-guardar").disabled = false;
+        $("cap-guardar").textContent = "Guardar";
       }
     }
 
@@ -3379,6 +3397,10 @@ window.WP_MODULOS_HTML.kpi = function (res) {
         }
         boton("Líneas", () => editarLineas(u));
         boton("Turno", () => cambiarTurno(u));
+        if (u.rol === "SUPERVISOR") {
+          boton("Ver PIN", () => verPin(u));
+          if (u.tienePin === true) boton("Borrar PIN", () => borrarPin(u));
+        }
         boton("Contraseña", () => cambiarPassword(u));
         if (!soyYo) {
           boton("Rol", () => cambiarRol(u));
@@ -3442,6 +3464,27 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       } catch (e) {
         alert("No se pudo: " + mensajeAuth(e));
       } finally { b.disabled = false; }
+    }
+
+    // PIN de un supervisor: solo el ADMIN lo ve (por si se le olvida) o lo borra para que cree otro
+    async function verPin(u) {
+      try {
+        const snap = await getDoc(doc(db, "pines_admin", u.uid));
+        if (snap.exists()) alert("PIN de " + (u.nombre || u.usuario) + " (" + u.usuario + "):\n\n" + snap.data().pin + "\n\nNo lo compartas con nadie más.");
+        else if (u.tienePin === true) alert(u.usuario + " tiene PIN, pero lo creó antes de este cambio y no hay copia.\nUsa «Borrar PIN» para que cree uno nuevo.");
+        else alert(u.usuario + " todavía no crea su PIN.\nLo crea desde su celular con el botón «Crear mi PIN».");
+      } catch (e) {
+        alert("No se pudo leer el PIN: " + mensajeAuth(e));
+      }
+    }
+    async function borrarPin(u) {
+      if (!confirm("¿Borrar el PIN de " + u.usuario + "?\nYa no podrá capturar en la PC central hasta que cree uno nuevo.")) return;
+      try {
+        await addDoc(collection(db, "solicitudes"), { tipo: "borrarpin", uid: u.uid, usuario: u.usuario, creadoPor: perfilActual.usuario, creadoEn: serverTimestamp() });
+        toast("Listo: en aprox. 1 minuto " + u.usuario + " podrá crear un PIN nuevo.", 5000);
+      } catch (e) {
+        alert("No se pudo: " + mensajeAuth(e));
+      }
     }
 
     async function sacarDeEquipos(u) {
