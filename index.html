@@ -74,8 +74,8 @@
                   font-weight: 900; font-size: 13px; border: 2px solid; }
     .pron-aviso b { font-size: 18px; }
     .pron-aviso small { font-weight: 700; opacity: .85; }
-    #tv .pron-aviso { font-size: clamp(14px, 1.4vw, 24px); }
-    #tv .pron-aviso b { font-size: clamp(18px, 2vw, 34px); }
+    #tv .pron-aviso { font-size: 1em; padding: .35em .7em; margin-bottom: .45em; gap: .5em; }
+    #tv .pron-aviso b { font-size: 1.4em; }
     .recordatorio { position: fixed; right: 14px; bottom: 14px; z-index: 48; width: min(360px, calc(100% - 24px));
                     background: #fff7ed; border: 2px solid #f97316; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.2); padding: 10px 12px; }
     .recordatorio[hidden] { display: none; }
@@ -101,16 +101,23 @@
     .tv-pantalla { background: #fff; color: var(--verde-osc); border: 2px solid var(--verde); border-radius: 8px; padding: 8px 12px; font: inherit;
                    font-weight: 900; font-size: 12px; cursor: pointer; }
     #tv:fullscreen .tv-pantalla { display: none; }
-    .tv-cuerpo { flex: 1; overflow: auto; padding: 10px 14px; }
+    /* Todo el pizarrón de la TV se mide en "em": ajustarTv() busca el tamaño de letra más grande con el que
+       el pizarrón completo (de la primera hora a TOTALES) cabe a lo ancho Y a lo alto de la pantalla. */
+    .tv-cuerpo { flex: 1; min-height: 0; overflow: auto; padding: 8px 14px; font-size: var(--tvf, 16px); }
     #tv .panel { border: none; box-shadow: none; padding: 0; margin: 0; }
     #tv .ayuda-captura { display: none; }
-    #tv .board-filtros label, #tv .board-fecha { font-size: clamp(16px, 1.6vw, 26px); }
+    #tv .board-filtros { font-size: 1em; padding: .3em .8em; margin-bottom: .45em; gap: .3em 1em; }
+    #tv .board-filtros label, #tv .board-fecha { font-size: 1.05em; }
     #tv .board-filtros select { font-size: inherit; max-width: none; }
-    #tv table.board { width: 100%; }
-    #tv table.board th { font-size: clamp(13px, 1.3vw, 22px); }
-    #tv table.board th .sup { font-size: clamp(10px, .9vw, 15px); }
-    #tv table.board td { font-size: clamp(20px, 2.4vw, 46px); padding: 6px 4px; }
-    #tv table.board td.hora { font-size: clamp(16px, 1.7vw, 30px); }
+    #tv .tabla-wrap { overflow: hidden; }
+    #tv table.board { width: 100%; min-width: 0 !important; font-size: 1em; }
+    #tv table.board th { font-size: .82em; padding: .3em .25em; line-height: 1.15; }
+    #tv table.board th .sup { font-size: .72em; }
+    #tv table.board td { font-size: 1.75em; padding: .1em .15em; line-height: 1.15; }
+    #tv table.board td.hora { font-size: 1.2em; }
+    #tv table.board tr.pron td { font-size: .9em; }
+    #tv table.board tr.pron td.pron-tit { font-size: .75em; }
+    #tv table.board td .marca { width: .3em; height: .3em; }
     @media (max-width: 768px) { .tv-barra { flex-wrap: wrap; } .tv-barra h2 { flex-basis: 100%; order: 3; } }
 
     /* ----- Plan Overview ----- */
@@ -1754,6 +1761,7 @@ window.WP_MODULOS_HTML.kpi = function (res) {
 
     function pintarPizarron(p) {
       if (p !== undefined) { pizarronActual = p; setTimeout(() => { atenderQR(); revisarRecordatorios(); }, 0); }
+      if (!$("tv").hidden) ajustarTv();
       setTimeout(() => { try { if (!$("panel-central").hidden) pintarCentral(); } catch (e) { console.error("central", e); } }, 0);
       p = pizarronActual;
       const cont = $("board");
@@ -2841,7 +2849,32 @@ window.WP_MODULOS_HTML.kpi = function (res) {
       const reloj = () => { $("tv-reloj").textContent = new Date().toLocaleString("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", second: "2-digit" }); };
       reloj(); clearInterval(relojTv); relojTv = setInterval(reloj, 1000);
       pantallaCompleta();
+      ajustarTv();
     }
+    // Tamaño de letra del modo TV según la pantalla: el más grande con el que TODO el pizarrón cabe
+    // (ancho y alto), sin barras de desplazamiento. Se recalcula al cambiar de tamaño, al entrar/salir de
+    // pantalla completa y cada vez que el pizarrón se vuelve a pintar (más horas, más líneas).
+    let timerAjusteTv = null;
+    function ajustarTv() {
+      clearTimeout(timerAjusteTv);
+      timerAjusteTv = setTimeout(() => requestAnimationFrame(ajustarTvYa), 60);
+    }
+    function ajustarTvYa() {
+      const c = $("tv-cuerpo");
+      if ($("tv").hidden || !c.clientHeight) return;
+      const wrap = c.querySelector(".tabla-wrap"), tabla = c.querySelector("table.board");
+      const cabe = () => c.scrollHeight <= c.clientHeight + 1 && c.scrollWidth <= c.clientWidth + 1 &&
+                         (!wrap || !tabla || tabla.offsetWidth <= wrap.clientWidth + 1);
+      let lo = 8, hi = 64;
+      for (let i = 0; i < 12; i++) {
+        const mid = (lo + hi) / 2;
+        c.style.setProperty("--tvf", mid + "px");
+        if (cabe()) lo = mid; else hi = mid;
+      }
+      c.style.setProperty("--tvf", Math.floor(lo * 10) / 10 + "px");
+    }
+    window.addEventListener("resize", ajustarTv);
+    document.addEventListener("fullscreenchange", ajustarTv);
     function cerrarTv() {
       if ($("tv").hidden) return;
       $("lugar-board").after($("panel-board"));
